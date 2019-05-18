@@ -26,7 +26,7 @@ parser.add_argument('--inference', action='store_true')
 parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
 
-backends.cudnn.benchmark = True
+# backends.cudnn.benchmark = True
 
 
 class Dict(dict):
