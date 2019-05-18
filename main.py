@@ -174,6 +174,8 @@ def main():
                 real_images = data[0]['data']
                 real_labels = data[0]['label']
 
+                print(real_images)
+
                 real_images = real_images.cuda()
                 real_labels = real_labels.squeeze(-1).long().cuda()
 
