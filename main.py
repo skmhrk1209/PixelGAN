@@ -97,16 +97,15 @@ def main():
     generator = nn.Sequential(
         nn.Sequential(
             nn.Linear(141, 32),
-            nn.BatchNorm1d(32),
-            nn.Sigmoid()
+            nn.Tanh()
         ),
         *[nn.Sequential(
             nn.Linear(32, 32),
-            nn.Sigmoid()
+            nn.Tanh()
         ) for _ in range(128)],
         nn.Sequential(
             nn.Linear(32, 1),
-            nn.Sigmoid()
+            nn.Tanh()
         )
     )
     generator = generator.cuda()
