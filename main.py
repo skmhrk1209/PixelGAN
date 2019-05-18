@@ -197,7 +197,7 @@ def main():
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
                 latents = torch.randn(config.local_batch_size, 128).cuda()
-                fake_images = generator(torch.cat((positions, latents, fake_labels), dim=-1))
+                fake_images = generator(torch.cat((positions, latents, fake_labels.float()), dim=-1))
                 fake_images = fake_images.reshape(1, image_size, image_size)
 
                 real_logits = discriminator(real_images.requires_grad_(True))
