@@ -39,25 +39,65 @@ class Dict(dict):
     def __delattr__(self, name): del self[name]
 
 
+class Pipeline(dali.pipeline.Pipeline):
+
+    def __init__(self, root, batch_size, num_threads, device_id, num_shards, shard_id,
+                 image_size, shuffle=False, mirror=False):
+
+        super().__init__(batch_size, num_threads, device_id, seed=device_id)
+
+        self.reader = dali.ops.FileReader(
+            file_root=root,
+            num_shards=num_shards,
+            shard_id=shard_id,
+            random_shuffle=shuffle
+        )
+        self.decoder = dali.ops.nvJPEGDecoder(
+            device="mixed"
+        )
+        self.resize = dali.ops.Resize(
+            device="gpu",
+            resize_x=image_size,
+            resize_y=image_size
+        )
+        self.normalize = dali.ops.CropMirrorNormalize(
+            device="gpu",
+            crop=image_size,
+            mean=(0.485 * 255, 0.456 * 255, 0.406 * 255),
+            std=(0.229 * 255, 0.224 * 255, 0.225 * 255)
+        )
+        self.coin = dali.ops.CoinFlip(probability=0.5 if mirror else 0.0)
+
+    def define_graph(self):
+        images, labels = self.reader()
+        images = self.decoder(images)
+        images = self.resize(images)
+        images = self.normalize(images, mirror=self.coin())
+        return images, labels
+
+
 def main():
+
+    distributed.init_process_group(backend='nccl')
 
     with open(args.config) as file:
         config = Dict(json.load(file))
-        config.update(vars(args))
-
-    distributed.init_process_group(backend='nccl')
-    world_size = distributed.get_world_size()
-    global_rank = distributed.get_rank()
-    device_count = torch.cuda.device_count()
-    local_rank = config.local_rank
-    torch.cuda.set_device(local_rank)
-    print(f'Enabled distributed training. (global_rank: {global_rank}/{world_size}, local_rank: {local_rank}/{device_count})')
+    config.update(vars(args))
+    config.update(dict(
+        world_size=distributed.get_world_size(),
+        global_rank=distributed.get_rank(),
+        device_count=torch.cuda.device_count()
+    ))
+    torch.cuda.set_device(config.local_rank)
+    print(f'Enabled distributed training. ('
+          f'global_rank: {config.global_rank}/{config.world_size}, '
+          f'local_rank: {config.local_rank}/{config.device_count}))')
 
     torch.manual_seed(0)
 
     generator = nn.Sequential(
         nn.Sequential(
-            nn.Linear(130, 32, bias=False),
+            nn.Linear(140, 32, bias=False),
             nn.BatchNorm1d(32),
             nn.Sigmoid()
         ),
@@ -108,8 +148,6 @@ def main():
         discriminator_optimizer.load_state_dict(checkpoint.discriminator_optimizer_state_dict)
         last_epoch = checkpoint.last_epoch
 
-    criterion = nn.CrossEntropyLoss(reduction='mean').cuda()
-
     summary_writer = SummaryWriter(config.event_directory)
 
     if config.training:
@@ -121,13 +159,14 @@ def main():
         # NOTE: Should random seed be the same in the same node?
         pipeline = Pipeline(
             root=config.train_root,
-            train=True,
             batch_size=config.local_batch_size,
             num_threads=config.num_workers,
-            device_id=local_rank,
-            num_shards=world_size,
-            shard_id=global_rank,
-            image_size=224
+            device_id=config.local_rank,
+            num_shards=config.world_size,
+            shard_id=config.global_rank,
+            image_size=config.image_size,
+            shuffle=True,
+            mirror=True
         )
         pipeline.build()
 
@@ -135,7 +174,7 @@ def main():
         # NOTE: Is that len(dataset) ?
         data_loader = pytorch.DALIClassificationIterator(
             pipelines=pipeline,
-            size=list(pipeline.epoch_size().values())[0] // world_size,
+            size=list(pipeline.epoch_size().values())[0] // config.world_size,
             auto_reset=True,
             stop_at_epoch=True
         )
@@ -155,13 +194,13 @@ def main():
                 real_labels = real_labels.squeeze().long()
                 fake_labels = real_labels.clone()
 
-                x = torch.arange(config.batch_size).cuda()
-                y = torch.arange(config.batch_size).cuda()
-                grid_y, grid_x = torch.meshgrid(y, x)
-                positions = torch.stack((grid_y.reshape(-1), grid_x.reshape(-1)), dim=-1)
-                latents = torch.randn(config.batch_size, config.latent_size).cuda()
+                y = torch.arange(config.image_size).cuda()
+                x = torch.arange(config.image_size).cuda()
+                y, x = torch.meshgrid(y, x)
+                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
+                latents = torch.randn(config.batch_size, 128).cuda()
                 fake_images = generator(torch.cat((positions, latents, fake_labels), dim=-1))
-                fake_images = fake_images.reshape(1, int(np.log2(config.batch_size)), -1)
+                fake_images = fake_images.reshape(1, image_size, image_size)
 
                 real_logits = discriminator(real_images.requires_grad_(True))
                 fake_logits = discriminator(fake_images.detach().requires_grad_(True))
