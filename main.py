@@ -26,7 +26,7 @@ parser.add_argument('--inference', action='store_true')
 parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
 
-# backends.cudnn.benchmark = True
+backends.cudnn.benchmark = True
 
 
 class Dict(dict):
@@ -97,17 +97,17 @@ def main():
     generator = nn.Sequential(
         nn.Sequential(
             nn.Linear(141, 32, bias=False),
-            nn.BatchNorm1d(32),
+            # nn.BatchNorm1d(32),
             nn.Sigmoid()
         ),
         *[nn.Sequential(
             nn.Linear(32, 32, bias=False),
-            nn.BatchNorm1d(32),
+            # nn.BatchNorm1d(32),
             nn.Sigmoid()
         ) for _ in range(128)],
         nn.Sequential(
             nn.Linear(32, 1, bias=False),
-            nn.BatchNorm1d(1),
+            # nn.BatchNorm1d(1),
             nn.Sigmoid()
         )
     )
