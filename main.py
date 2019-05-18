@@ -194,7 +194,7 @@ def main():
                 real_labels = real_labels.squeeze().long()
                 fake_labels = real_labels.clone()
 
-                print(real_labels.shape)
+                print(real_images.shape)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
