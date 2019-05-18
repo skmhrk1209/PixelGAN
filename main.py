@@ -195,10 +195,11 @@ def main():
                 latents = torch.randn(config.local_batch_size, 128).repeat(1, 3 * config.image_size ** 2).reshape(-1, 128).cuda()
                 labels = embedding(real_labels).repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
 
+                z = torch.arange(3)
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
-                y, x = torch.meshgrid(y, x)
-                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
+                z, y, x = torch.meshgrid(z, y, x)
+                positions = torch.stack((z.reshape(-1), y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
 
                 fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
