@@ -226,7 +226,11 @@ def main():
                     scaled_generator_loss.backward()
                 generator_optimizer.step()
 
-                if global_rank == 0:
+                if step % 100 == 0 and global_rank == 0:
+                    summary_writer.add_images(
+                        tag="generated_images",
+                        img_tensor=fake_images
+                    )
                     summary_writer.add_scalars(
                         main_tag='training',
                         tag_scalar_dict=dict(loss=loss)
