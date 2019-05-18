@@ -112,7 +112,7 @@ def main():
 
     summary_writer = SummaryWriter(config.event_directory)
 
-    if args.training:
+    if config.training:
 
         os.makedirs(config.checkpoint_directory, exist_ok=True)
         os.makedirs(config.event_directory, exist_ok=True)
