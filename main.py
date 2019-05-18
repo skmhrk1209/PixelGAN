@@ -201,7 +201,7 @@ def main():
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
 
                 fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1))
-                fake_images = fake_images.reshape(config.local_batch_size, 3, image_size, image_size)
+                fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images.requires_grad_(True))
                 fake_logits = discriminator(fake_images.detach().requires_grad_(True))
