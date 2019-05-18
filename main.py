@@ -97,17 +97,14 @@ def main():
     generator = nn.Sequential(
         nn.Sequential(
             nn.Linear(141, 32, bias=False),
-            # nn.BatchNorm1d(32),
             nn.Sigmoid()
         ),
         *[nn.Sequential(
             nn.Linear(32, 32, bias=False),
-            # nn.BatchNorm1d(32),
             nn.Sigmoid()
         ) for _ in range(128)],
         nn.Sequential(
             nn.Linear(32, 1, bias=False),
-            # nn.BatchNorm1d(1),
             nn.Sigmoid()
         )
     )
@@ -212,7 +209,7 @@ def main():
                 fake_logits = fake_logits.squeeze(-1)
 
                 real_losses = nn.functional.softplus(-real_logits)
-                fake_losses = nn.functional.softplus(+fake_logits)
+                fake_losses = nn.functional.softplus(fake_logits)
                 discriminator_losses = real_losses + fake_losses
 
                 if config.real_gradient_penalty_weight:
