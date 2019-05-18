@@ -89,7 +89,7 @@ def main():
     ))
     torch.cuda.set_device(config.local_rank)
     print(f'Enabled distributed training. ('
-          f'global_rank: {config.global_rank}/{config.world_size}, '
+          f'global_rank: {config.global_rank}/{config.world_size} '
           f'local_rank: {config.local_rank}/{config.device_count}))')
 
     torch.manual_seed(0)
@@ -241,7 +241,8 @@ def main():
                             discriminator_loss=discriminator_loss
                         )
                     )
-                    print(f'[training] epoch: {epoch} step: {step} loss: {loss}')
+                    print(f'[training] epoch: {epoch} step: {step} '
+                          f'generator_loss: {generator_loss} discriminator_loss: {discriminator_loss}')
 
             torch.save(dict(
                 generator_state_dict=generator.state_dict(),
