@@ -129,9 +129,9 @@ def main():
     )
 
     generator, generator_optimizer = amp.initialize(generator, generator_optimizer, opt_level=config.opt_level)
-    generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
-
     discriminator, discriminator_optimizer = amp.initialize(discriminator, discriminator_optimizer, opt_level=config.opt_level)
+
+    generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
     discriminator = parallel.DistributedDataParallel(discriminator, delay_allreduce=True)
 
     last_epoch = -1
