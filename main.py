@@ -195,7 +195,7 @@ def main():
                 latents = torch.randn(config.local_batch_size, 128).repeat(1, 3 * config.image_size ** 2).reshape(-1, 128).cuda()
                 labels = embedding(real_labels).repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
 
-                z = torch.arange(3)
+                z = torch.arange(3).cuda()
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
                 z, y, x = torch.meshgrid(z, y, x)
