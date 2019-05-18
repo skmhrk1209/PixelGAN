@@ -24,7 +24,7 @@ parser.add_argument('--checkpoint', type=str, default='')
 parser.add_argument('--training', action='store_true')
 parser.add_argument('--evaluation', action='store_true')
 parser.add_argument('--inference', action='store_true')
-parser.add_argument("--local_rank", type=int)
+parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
 
 backends.cudnn.benchmark = True
@@ -53,15 +53,15 @@ class Pipeline(dali.pipeline.Pipeline):
             random_shuffle=shuffle
         )
         self.decoder = dali.ops.nvJPEGDecoder(
-            device="mixed"
+            device='mixed'
         )
         self.resize = dali.ops.Resize(
-            device="gpu",
+            device='gpu',
             resize_x=image_size,
             resize_y=image_size
         )
         self.normalize = dali.ops.CropMirrorNormalize(
-            device="gpu",
+            device='gpu',
             crop=image_size,
             mean=(0.485 * 255, 0.456 * 255, 0.406 * 255),
             std=(0.229 * 255, 0.224 * 255, 0.225 * 255)
@@ -116,7 +116,7 @@ def main():
 
     discriminator = models.resnet18()
     discriminator.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    nn.init.kaiming_normal_(discriminator.conv1.weight, nonlinearity="relu")
+    nn.init.kaiming_normal_(discriminator.conv1.weight, nonlinearity='relu')
     discriminator.fc = nn.Linear(in_features=2048, out_features=10, bias=True)
     nn.init.xavier_normal_(discriminator.fc.weight)
     nn.init.zeros_(discriminator.fc.bias)
@@ -185,8 +185,8 @@ def main():
 
             for step, data in enumerate(data_loader):
 
-                real_images = data[0]["data"]
-                real_labels = data[0]["label"]
+                real_images = data[0]['data']
+                real_labels = data[0]['label']
 
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
@@ -267,7 +267,7 @@ def main():
 
                 if step % 100 == 0 and global_rank == 0:
                     summary_writer.add_images(
-                        tag="generated_images",
+                        tag='generated_images',
                         img_tensor=fake_images
                     )
                     summary_writer.add_scalars(
