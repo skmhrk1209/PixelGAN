@@ -190,10 +190,10 @@ def main():
                 real_labels = data[0]['label']
 
                 real_images = real_images.cuda()
-                real_labels = real_labels.cuda().squeeze(-1).long()
+                real_labels = real_labels.squeeze(-1).long().cuda()
 
-                latents = torch.randn(config.local_batch_size * config.image_size ** 2, 128).cuda()
-                labels = embedding(real_labels).repeat(1, config.image_size ** 2).reshape(-1, 10)
+                latents = torch.randn(config.local_batch_size, 128).repeat(1, 3 * config.image_size ** 2).reshape(-1, 128).cuda()
+                labels = embedding(real_labels).repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
