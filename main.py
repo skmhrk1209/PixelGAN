@@ -183,15 +183,13 @@ def main():
 
             for step, data in enumerate(data_loader):
 
-                print(data)
-
                 real_images = data[0]['data']
                 real_labels = data[0]['label']
 
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
 
-                real_labels = real_labels.squeeze().long()
+                real_labels = real_labels.squeeze(-1).long()
                 fake_labels = real_labels.clone()
 
                 y = torch.arange(config.image_size).cuda()
