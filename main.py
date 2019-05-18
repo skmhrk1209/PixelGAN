@@ -31,7 +31,7 @@ backends.cudnn.benchmark = True
 
 
 class Dict(dict):
-    
+
     def __getattr__(self, name): return self[name]
 
     def __setattr__(self, name, value): self[name] = value
@@ -43,12 +43,13 @@ def main():
 
     with open(args.config) as file:
         config = Dict(json.load(file))
+        config.update(vars(args))
 
     distributed.init_process_group(backend='nccl')
     world_size = distributed.get_world_size()
     global_rank = distributed.get_rank()
     device_count = torch.cuda.device_count()
-    local_rank = args.local_rank
+    local_rank = config.local_rank
     torch.cuda.set_device(local_rank)
     print(f'Enabled distributed training. (global_rank: {global_rank}/{world_size}, local_rank: {local_rank}/{device_count})')
 
@@ -81,9 +82,6 @@ def main():
     nn.init.zeros_(discriminator.fc.bias)
     discriminator = discriminator.cuda()
 
-    config.global_batch_size = config.local_batch_size * world_size
-    config.lr = config.base_lr * config.global_batch_size / 256
-
     generator_optimizer = torch.optim.Adam(
         params=generator.parameters(),
         lr=config.generator_lr,
@@ -95,14 +93,19 @@ def main():
         betas=(config.discriminator_beta1, config.discriminator_beta2)
     )
 
-    model, optimizer = amp.initialize(model, optimizer, opt_level=config.opt_level)
-    model = parallel.DistributedDataParallel(model, delay_allreduce=True)
+    generator, generator_optimizer = amp.initialize(generator, generator_optimizer, opt_level=config.opt_level)
+    generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
+
+    discriminator, discriminator_optimizer = amp.initialize(discriminator, discriminator_optimizer, opt_level=config.opt_level)
+    discriminator = parallel.DistributedDataParallel(discriminator, delay_allreduce=True)
 
     last_epoch = -1
-    if args.checkpoint:
-        checkpoint = Dict(torch.load(args.checkpoint), map_location=lambda storage, location: storage.cuda(local_rank))
-        model.load_state_dict(checkpoint.model_state_dict)
-        optimizer.load_state_dict(checkpoint.optimizer_state_dict)
+    if config.checkpoint:
+        checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(local_rank))
+        generator.load_state_dict(checkpoint.generator_state_dict)
+        generator_optimizer.load_state_dict(checkpoint.generator_optimizer_state_dict)
+        discriminator.load_state_dict(checkpoint.discriminator_state_dict)
+        discriminator_optimizer.load_state_dict(checkpoint.discriminator_optimizer_state_dict)
         last_epoch = checkpoint.last_epoch
 
     criterion = nn.CrossEntropyLoss(reduction='mean').cuda()
@@ -231,16 +234,12 @@ def main():
                     print(f'[training] epoch: {epoch} step: {step} loss: {loss}')
 
             torch.save(dict(
-                model_state_dict=generator.state_dict(),
-                optimizer_state_dict=generator_optimizer.state_dict(),
+                generator_state_dict=generator.state_dict(),
+                generator_optimizer_state_dict=generator_optimizer.state_dict(),
+                discriminator_state_dict=discriminator.state_dict(),
+                discriminator_optimizer_state_dict=discriminator_optimizer.state_dict(),
                 last_epoch=epoch
-            ), f'{config.generator_checkpoint_directory}/epoch_{epoch}')
-
-            torch.save(dict(
-                model_state_dict=discriminator.state_dict(),
-                optimizer_state_dict=discriminator_optimizer.state_dict(),
-                last_epoch=epoch
-            ), f'{config.discriminator_checkpoint_directory}/epoch_{epoch}')
+            ), f'{config.checkpoint_directory}/epoch_{epoch}')
 
     summary_writer.close()
 
