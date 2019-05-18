@@ -13,7 +13,6 @@ from nvidia import dali
 from nvidia.dali.plugin import pytorch
 from apex import amp
 from apex import parallel
-from pipeline import Pipeline
 import argparse
 import json
 import os
