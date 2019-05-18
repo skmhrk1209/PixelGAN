@@ -114,8 +114,6 @@ def main():
     generator = generator.cuda()
 
     discriminator = models.resnet18()
-    discriminator.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
-    nn.init.kaiming_normal_(discriminator.conv1.weight, nonlinearity='relu')
     discriminator.fc = nn.Linear(in_features=512, out_features=10, bias=True)
     nn.init.xavier_normal_(discriminator.fc.weight)
     nn.init.zeros_(discriminator.fc.bias)
@@ -185,6 +183,8 @@ def main():
 
             for step, data in enumerate(data_loader):
 
+                print(data)
+
                 real_images = data[0]['data']
                 real_labels = data[0]['label']
 
@@ -193,8 +193,6 @@ def main():
 
                 real_labels = real_labels.squeeze().long()
                 fake_labels = real_labels.clone()
-
-                print(real_images.shape)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
