@@ -40,8 +40,7 @@ class Dict(dict):
 
 class Pipeline(dali.pipeline.Pipeline):
 
-    def __init__(self, root, batch_size, num_threads, device_id, num_shards, shard_id,
-                 image_size, shuffle=False, mirror=False):
+    def __init__(self, root, batch_size, num_threads, device_id, num_shards, shard_id, image_size, shuffle):
 
         super().__init__(batch_size, num_threads, device_id, seed=device_id)
 
@@ -59,19 +58,11 @@ class Pipeline(dali.pipeline.Pipeline):
             resize_x=image_size,
             resize_y=image_size
         )
-        self.normalize = dali.ops.CropMirrorNormalize(
-            device='gpu',
-            crop=image_size,
-            mean=(0.485 * 255, 0.456 * 255, 0.406 * 255),
-            std=(0.229 * 255, 0.224 * 255, 0.225 * 255)
-        )
-        self.coin = dali.ops.CoinFlip(probability=0.5 if mirror else 0.0)
 
     def define_graph(self):
         images, labels = self.reader()
         images = self.decoder(images)
         images = self.resize(images)
-        images = self.normalize(images, mirror=self.coin())
         return images, labels
 
 
@@ -157,8 +148,7 @@ def main():
             num_shards=config.world_size,
             shard_id=config.global_rank,
             image_size=config.image_size,
-            shuffle=True,
-            mirror=True
+            shuffle=True
         )
         pipeline.build()
 
