@@ -176,6 +176,9 @@ def main():
             stop_at_epoch=True
         )
 
+        embedding = nn.Embedding(10, 10)
+        nn.init.eye_(embedding.weight)
+
         for epoch in range(last_epoch + 1, config.num_epochs):
 
             generator.train()
@@ -187,18 +190,18 @@ def main():
                 real_labels = data[0]['label']
 
                 real_images = real_images.cuda()
-                real_labels = real_labels.cuda()
+                real_labels = real_labels.cuda().squeeze(-1).long()
 
-                real_labels = real_labels.squeeze(-1).long()
-                fake_labels = real_labels.clone()
+                latents = torch.randn(config.local_batch_size * config.image_size ** 2, 128).cuda()
+                labels = embedding(real_labels).repeat(1, config.image_size ** 2).reshape(-1, 10)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
                 y, x = torch.meshgrid(y, x)
-                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
-                latents = torch.randn(config.local_batch_size, 128).cuda()
-                fake_images = generator(torch.cat((positions.float(), latents, fake_labels.float()), dim=-1))
-                fake_images = fake_images.reshape(1, image_size, image_size)
+                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
+
+                fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1))
+                fake_images = fake_images.reshape(config.local_batch_size, 3, image_size, image_size)
 
                 real_logits = discriminator(real_images.requires_grad_(True))
                 fake_logits = discriminator(fake_images.detach().requires_grad_(True))
@@ -206,7 +209,7 @@ def main():
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1))
                 real_logits = real_logits.squeeze(-1)
 
-                fake_logits = torch.gather(fake_logits, dim=1, index=fake_labels.unsqueeze(-1))
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1))
                 fake_logits = fake_logits.squeeze(-1)
 
                 real_losses = nn.functional.softplus(-real_logits)
