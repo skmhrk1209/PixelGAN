@@ -96,7 +96,7 @@ def main():
 
     generator = nn.Sequential(
         nn.Sequential(
-            nn.Linear(140, 32, bias=False),
+            nn.Linear(141, 32, bias=False),
             nn.BatchNorm1d(32),
             nn.Sigmoid()
         ),
@@ -115,8 +115,6 @@ def main():
 
     discriminator = models.resnet18()
     discriminator.fc = nn.Linear(in_features=512, out_features=10, bias=True)
-    nn.init.xavier_normal_(discriminator.fc.weight)
-    nn.init.zeros_(discriminator.fc.bias)
     discriminator = discriminator.cuda()
 
     generator_optimizer = torch.optim.Adam(
