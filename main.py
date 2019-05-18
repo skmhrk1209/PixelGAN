@@ -199,8 +199,8 @@ def main():
                 fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
 
-                real_logits = discriminator(real_images.requires_grad_(True))
-                fake_logits = discriminator(fake_images.detach().requires_grad_(True))
+                real_logits = discriminator(real_images)
+                fake_logits = discriminator(fake_images.detach())
 
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1))
                 real_logits = real_logits.squeeze(-1)
@@ -212,28 +212,6 @@ def main():
                 fake_losses = nn.functional.softplus(fake_logits)
                 discriminator_losses = real_losses + fake_losses
 
-                if config.real_gradient_penalty_weight:
-                    real_gradients = torch.autograd.grad(
-                        outputs=real_logits,
-                        inputs=real_images,
-                        grad_outputs=torch.ones_like(real_logits),
-                        retain_graph=True,
-                        create_graph=True
-                    )[0]
-                    real_gradient_penalties = torch.sum(real_gradients ** 2, dim=(1, 2, 3))
-                    discriminator_losses += real_gradient_penalties * config.real_gradient_penalty_weight
-
-                if config.fake_gradient_penalty_weight:
-                    fake_gradients = torch.autograd.grad(
-                        outputs=fake_logits,
-                        inputs=fake_images,
-                        grad_outputs=torch.ones_like(fake_logits),
-                        retain_graph=True,
-                        create_graph=True
-                    )[0]
-                    fake_gradient_penalties = torch.sum(fake_gradients ** 2, dim=(1, 2, 3))
-                    discriminator_losses += fake_gradient_penalties * config.fake_gradient_penalty_weight
-
                 discriminator_loss = torch.mean(discriminator_losses)
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
@@ -244,17 +222,6 @@ def main():
 
                 fake_losses = nn.functional.softplus(-fake_logits)
                 generator_losses = fake_losses
-
-                if config.mode_seeking_loss_weight:
-                    latent_gradients = torch.autograd.grad(
-                        outputs=fake_images,
-                        inputs=latents,
-                        grad_outputs=torch.ones_like(fake_images),
-                        retain_graph=True,
-                        create_graph=True
-                    )[0]
-                    mode_seeking_losses = 1.0 / (torch.sum(latent_gradients ** 2, dim=1) + 1.0e-12)
-                    generator_losses += mode_seeking_losses * config.mode_seeking_loss_weight
 
                 generator_loss = torch.mean(generator_losses)
                 generator_optimizer.zero_grad()
