@@ -176,7 +176,7 @@ def main():
             stop_at_epoch=True
         )
 
-        embedding = nn.Embedding(10, 10)
+        embedding = nn.Embedding(10, 10).cuda()
         nn.init.eye_(embedding.weight)
 
         for epoch in range(last_epoch + 1, config.num_epochs):
