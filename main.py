@@ -97,6 +97,7 @@ def main():
     generator = nn.Sequential(
         nn.Sequential(
             nn.Linear(141, 32),
+            nn.BatchNorm1d(32),
             nn.Sigmoid()
         ),
         *[nn.Sequential(
