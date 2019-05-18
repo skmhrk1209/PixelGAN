@@ -116,7 +116,7 @@ def main():
     discriminator = models.resnet18()
     discriminator.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
     nn.init.kaiming_normal_(discriminator.conv1.weight, nonlinearity='relu')
-    discriminator.fc = nn.Linear(in_features=2048, out_features=10, bias=True)
+    discriminator.fc = nn.Linear(in_features=512, out_features=10, bias=True)
     nn.init.xavier_normal_(discriminator.fc.weight)
     nn.init.zeros_(discriminator.fc.bias)
     discriminator = discriminator.cuda()
@@ -180,7 +180,8 @@ def main():
 
         for epoch in range(last_epoch + 1, config.num_epochs):
 
-            model.train()
+            generator.train()
+            discriminator.train()
 
             for step, data in enumerate(data_loader):
 
