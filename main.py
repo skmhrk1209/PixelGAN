@@ -269,7 +269,10 @@ def main():
                     )
                     summary_writer.add_scalars(
                         main_tag='training',
-                        tag_scalar_dict=dict(loss=loss)
+                        tag_scalar_dict=dict(
+                            generator_loss=generator_loss,
+                            discriminator_loss=discriminator_loss
+                        )
                     )
                     print(f'[training] epoch: {epoch} step: {step} loss: {loss}')
 
