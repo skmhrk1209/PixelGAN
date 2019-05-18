@@ -96,15 +96,15 @@ def main():
 
     generator = nn.Sequential(
         nn.Sequential(
-            nn.Linear(141, 32, bias=False),
+            nn.Linear(141, 32),
             nn.Sigmoid()
         ),
         *[nn.Sequential(
-            nn.Linear(32, 32, bias=False),
+            nn.Linear(32, 32),
             nn.Sigmoid()
         ) for _ in range(128)],
         nn.Sequential(
-            nn.Linear(32, 1, bias=False),
+            nn.Linear(32, 1),
             nn.Sigmoid()
         )
     )
