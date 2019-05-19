@@ -87,7 +87,7 @@ class Generator(nn.Module):
         inputs = self.module_dict.first_linear_block(inputs)
 
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
-            inputs += linear_block(inputs)
+            inputs = inputs + linear_block(inputs)
 
         inputs = self.module_dict.last_linear_block(inputs)
 
