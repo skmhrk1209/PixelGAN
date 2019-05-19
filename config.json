@@ -1,5 +1,5 @@
 {
-    "opt_level": "O0",
+    "image_size": 256,
     "num_workers": 4,
     "num_epochs": 100,
     "local_batch_size": 1,
@@ -9,9 +9,9 @@
     "discriminator_lr": 0.001,
     "discriminator_beta1": 0.9,
     "discriminator_beta2": 0.999,
+    "opt_level": "O0",
     "checkpoint_directory": "checkpoints",
     "event_directory": "events",
     "train_root": "mnist/train",
-    "test_root": "mnist/test",
-    "image_size": 256
+    "test_root": "mnist/test"
 }
