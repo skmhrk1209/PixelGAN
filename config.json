@@ -12,6 +12,6 @@
     "checkpoint_directory": "checkpoints",
     "event_directory": "events",
     "train_root": "mnist/train",
-    "test_root": "cifar10/val",
+    "test_root": "mnist/test",
     "image_size": 256
 }

@@ -112,7 +112,7 @@ def main():
         ),
         nn.Sequential(
             nn.Conv2d(128, 1, 1, bias=False),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(1),
             nn.Tanh()
         )
     ).cuda()
