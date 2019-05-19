@@ -43,7 +43,7 @@ class Generator(nn.Module):
 
 class Discriminator(nn.Module):
 
-    def __init__(self, conv_params, linear_param, embedding_param):
+    def __init__(self, conv_params, linear_param):
 
         super().__init__()
 
@@ -55,8 +55,7 @@ class Discriminator(nn.Module):
                     nn.ReLU()
                 ) for conv_param in conv_params
             ]),
-            linear_block=nn.Linear(**linear_param),
-            embedding_block=nn.Embedding(**embedding_param)
+            linear_block=nn.Linear(**linear_param)
         ))
 
     def forward(self, inputs, labels):
@@ -65,39 +64,6 @@ class Discriminator(nn.Module):
             inputs = conv_block(inputs)
 
         inputs = torch.mean(inputs, dim=(2, 3))
-        outputs = self.module_dict.linear_block(inputs)
-        labels = self.module_dict.embedding_block(labels)
-        outputs = outputs.squeeze(1) + torch.sum(inputs * labels, dim=1)
-
-        return outputs
-
-
-class VariationalAutoencoder(nn.Module):
-
-    def __init__(self, linear_params):
-
-        super().__init__()
-
-        self.module_dict = nn.ModuleDict(dict(
-            linear_blocks=nn.ModuleList([
-                nn.Sequential(
-                    nn.Linear(**linear_param),
-                    nn.ReLU()
-                ) for linear_param in linear_params[:-1]
-            ]),
-            linear_block=nn.Linear(**linear_params[-1])
-        ))
-
-    def forward(self, inputs):
-
-        for linear_block in self.module_dict.linear_blocks:
-            inputs = linear_block(inputs)
-
         inputs = self.module_dict.linear_block(inputs)
 
-        means, log_variances = torch.chunk(inputs, 2, dim=1)
-        standard_deviations = torch.exp(0.5 * log_variances)
-        latents = torch.randn_like(means) * standard_deviations + means
-        kl_divergences = -0.5 * torch.sum(1 + log_variances - means ** 2 - standard_deviations ** 2, dim=1)
-
-        return latents, kl_divergences
+        return inputs
