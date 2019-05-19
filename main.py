@@ -96,7 +96,7 @@ def main():
 
     generator = nn.Sequential(
         nn.Sequential(
-            nn.Conv2d(141, 128, 1, bias=False),
+            nn.Conv2d(140, 128, 1, bias=False),
             nn.BatchNorm2d(128),
             nn.Tanh()
         ),
@@ -191,9 +191,6 @@ def main():
             stop_at_epoch=True
         )
 
-        embedding = nn.Embedding(10, 10).cuda()
-        nn.init.eye_(embedding.weight)
-
         for epoch in range(last_epoch + 1, config.num_epochs):
 
             generator.train()
@@ -207,26 +204,27 @@ def main():
                 real_images = real_images.cuda()
                 real_labels = real_labels.squeeze(-1).long().cuda()
 
-                latents = torch.randn(config.local_batch_size, 128).repeat(1, 3 * config.image_size ** 2).reshape(-1, 128).cuda()
-                labels = embedding(real_labels).repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
+                latents = torch.randn(config.local_batch_size, 128, device='cuda')
+                latents = latents.repeat(1, 3 * config.image_size ** 2).reshape(-1, 128)
 
-                z = torch.arange(3).cuda()
+                labels = nn.functional.embedding(real_labels, torch.eye(10, 10, device='cuda'))
+                labels = labels.repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
+
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
-                z, y, x = torch.meshgrid(z, y, x)
-                positions = torch.stack((z.reshape(-1), y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
+                y, x = torch.meshgrid(y, x)
+                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
+                positions = (positions - config.image_size / 2) / (config.image_size / 2)
+                positions = positions.repeat(config.local_batch_size, 1)
 
-                fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1).unsqueeze(-1).unsqueeze(-1))
+                fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
                 fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
 
-                real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1))
-                real_logits = real_logits.squeeze(-1)
-
-                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1))
-                fake_logits = fake_logits.squeeze(-1)
+                real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 real_losses = nn.functional.softplus(-real_logits)
                 fake_losses = nn.functional.softplus(fake_logits)
@@ -238,7 +236,9 @@ def main():
                     scaled_discriminator_loss.backward()
                 discriminator_optimizer.step()
 
-                fake_logits = discriminator(fake_images)
+                fake_logits = discriminator(fake_images).reshape(-1, 10)
+
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 fake_losses = nn.functional.softplus(-fake_logits)
                 generator_losses = fake_losses
@@ -249,9 +249,13 @@ def main():
                     scaled_generator_loss.backward()
                 generator_optimizer.step()
 
-                if step % 100 == 0 and config.global_rank == 0:
+                if config.global_rank == 0:
                     summary_writer.add_images(
-                        tag='generated_images',
+                        tag='real_images',
+                        img_tensor=real_images
+                    )
+                    summary_writer.add_images(
+                        tag='fake_images',
                         img_tensor=fake_images
                     )
                     summary_writer.add_scalars(
