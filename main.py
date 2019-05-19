@@ -178,7 +178,7 @@ def main():
             shard_id=config.global_rank,
             image_size=config.image_size,
             shuffle=True,
-            mirror=True
+            mirror=False
         )
         pipeline.build()
 
