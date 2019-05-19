@@ -143,7 +143,7 @@ def main():
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
 
-                labels = nn.functional.embedding(real_labels, torch.eye(10))
+                labels = nn.functional.embedding(real_labels, torch.eye(10, device='cuda'))
                 latents = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
 
                 latents = torch.randn(config.local_batch_size, 32, device='cuda')
