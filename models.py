@@ -43,7 +43,7 @@ class Generator(nn.Module):
 
 class Discriminator(nn.Module):
 
-    def __init__(self, conv_params, linear_param):
+    def __init__(self, conv_params, linear_param, embedding_param):
 
         super().__init__()
 
@@ -55,20 +55,21 @@ class Discriminator(nn.Module):
                     nn.ReLU()
                 ) for conv_param in conv_params
             ]),
-            linear_block=nn.Sequential(
-                nn.Linear(**linear_param)
-            )
+            linear_block=nn.Linear(**linear_param),
+            embedding_block=nn.Embedding(**embedding_param)
         ))
 
-    def forward(self, inputs):
+    def forward(self, inputs, labels):
 
         for conv_block in self.module_dict.conv_blocks:
             inputs = conv_block(inputs)
 
         inputs = torch.mean(inputs, dim=(2, 3))
-        inputs = self.module_dict.linear_block(inputs)
+        outputs = self.module_dict.linear_block(inputs)
+        labels = self.module_dict.embedding_block(labels)
+        outputs = outputs + torch.sum(inputs * labels, dim=1, keepdim=True)
 
-        return inputs
+        return outputs
 
 
 class VariationalAutoencoder(nn.Module):
