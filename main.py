@@ -180,13 +180,7 @@ def main():
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
-                fake_images = fake_images.reshape(config.local_batch_size, config.image_size, config.image_size)
-
-                print(real_images.shape)
-                print(fake_images.shape)
-
-                real_images = real_images.unsqueeze(1)
-                fake_images = fake_images.unsqueeze(1)
+                fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
                 fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
