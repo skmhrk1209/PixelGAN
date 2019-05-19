@@ -17,7 +17,7 @@ import models
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='config.json')
-parser.add_argument('--image_size', type=int, default=1024)
+parser.add_argument('--image_size', type=int, default=28)
 parser.add_argument('--checkpoint', type=str, default='')
 parser.add_argument('--training', action='store_true')
 parser.add_argument('--generate', action='store_true')
@@ -162,17 +162,17 @@ def main():
                 real_labels = real_labels.cuda()
 
                 latents, kl_divergences = encoder(real_images)
-                latents = latents.repeat(1, 1 * 28 ** 2).reshape(-1, 128)
+                latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
 
-                y = torch.arange(28).cuda()
-                x = torch.arange(28).cuda()
+                y = torch.arange(config.image_size).cuda()
+                x = torch.arange(config.image_size).cuda()
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
-                positions = (positions.float() - 28 / 2) / (28 / 2)
+                positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
-                fake_images = fake_images.reshape(config.local_batch_size, 1, 28, 28)
+                fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
                 fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
