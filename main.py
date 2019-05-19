@@ -211,14 +211,14 @@ def main():
                     scaled_generator_loss.backward()
                 generator_optimizer.step()
 
-                if config.global_rank == 0:
+                if step % 100 == 0 and config.global_rank == 0:
                     summary_writer.add_image(
                         tag='real_images',
-                        img_tensor=real_images[0]
+                        img_tensor=real_images.squeeze(0)
                     )
                     summary_writer.add_image(
                         tag='fake_images',
-                        img_tensor=fake_images[0]
+                        img_tensor=fake_images.squeeze(0)
                     )
                     summary_writer.add_scalars(
                         main_tag='training',

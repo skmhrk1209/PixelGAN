@@ -10,8 +10,8 @@
     "discriminator_beta1": 0.9,
     "discriminator_beta2": 0.999,
     "opt_level": "O0",
-    "checkpoint_directory": "content/gdrive/My Drive/PixelGAN/checkpoints",
-    "event_directory": "content/gdrive/My Drive/PixelGAN/events",
+    "checkpoint_directory": "/content/gdrive/My Drive/PixelGAN/checkpoints",
+    "event_directory": "/content/gdrive/My Drive/PixelGAN/events",
     "train_root": "mnist/train",
     "test_root": "mnist/test"
 }
