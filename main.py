@@ -169,7 +169,9 @@ def main():
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
                 positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
+                print(positions.shape)
                 positions = positions.repeat(config.local_batch_size, 1)
+                print(positions.shape)
 
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
