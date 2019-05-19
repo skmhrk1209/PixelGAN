@@ -174,8 +174,8 @@ def main():
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
-                real_logits = discriminator(real_images).reshape(-1, 10)
-                fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
+                real_logits = discriminator(real_images)
+                fake_logits = discriminator(fake_images.detach())
 
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
@@ -190,7 +190,7 @@ def main():
                     scaled_discriminator_loss.backward()
                 discriminator_optimizer.step()
 
-                fake_logits = discriminator(fake_images).reshape(-1, 10)
+                fake_logits = discriminator(fake_images)
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 fake_losses = nn.functional.softplus(-fake_logits)
@@ -203,11 +203,11 @@ def main():
                 generator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
-                    summary_writer.add_image(
+                    summary_writer.add_images(
                         tag='real_images',
                         img_tensor=real_images
                     )
-                    summary_writer.add_image(
+                    summary_writer.add_images(
                         tag='fake_images',
                         img_tensor=fake_images
                     )
