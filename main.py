@@ -161,13 +161,10 @@ def main():
             generator.train()
             discriminator.train()
 
-            for step, data in enumerate(data_loader):
-
-                real_images = data[0]['data']
-                real_labels = data[0]['label']
+            for step, (real_images, real_labels) in enumerate(data_loader):
 
                 real_images = real_images.cuda()
-                real_labels = real_labels.squeeze(-1).long().cuda()
+                real_labels = real_labels.cuda()
 
                 latents = torch.randn(config.local_batch_size, 128, device='cuda')
                 latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
