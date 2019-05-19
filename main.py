@@ -98,17 +98,17 @@ def main():
         nn.Sequential(
             nn.Conv2d(140, 128, 1, bias=False),
             nn.BatchNorm2d(128),
-            nn.Tanh()
+            nn.ReLU()
         ),
         nn.Sequential(
             nn.Conv2d(128, 128, 1, bias=False),
             nn.BatchNorm2d(128),
-            nn.Tanh()
+            nn.ReLU()
         ),
         nn.Sequential(
             nn.Conv2d(128, 128, 1, bias=False),
             nn.BatchNorm2d(128),
-            nn.Tanh()
+            nn.ReLU()
         ),
         nn.Sequential(
             nn.Conv2d(128, 1, 1, bias=False),
