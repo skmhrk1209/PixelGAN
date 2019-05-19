@@ -144,7 +144,7 @@ def main():
                 real_labels = real_labels.cuda()
 
                 labels = nn.functional.embedding(real_labels, torch.eye(10, device='cuda'))
-                latents = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
+                labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
 
                 latents = torch.randn(config.local_batch_size, 32, device='cuda')
                 latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
@@ -152,12 +152,10 @@ def main():
                 y = torch.linspace(-1, 1, config.image_size, device='cuda')
                 x = torch.linspace(-1, 1, config.image_size, device='cuda')
                 y, x = torch.meshgrid(y, x)
-                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
+                positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
                 positions = positions.repeat(config.local_batch_size, 1)
 
-                print(labels.shape, latents.shape, positions.shape)
-
-                fake_images = generator(torch.cat((labels, latents, positions), dim=-1))
+                fake_images = generator(torch.cat((labels, latents, positions), dim=1))
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
                 fake_logits = discriminator(fake_images, real_labels)
