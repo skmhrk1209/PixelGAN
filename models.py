@@ -67,7 +67,7 @@ class Discriminator(nn.Module):
         inputs = torch.mean(inputs, dim=(2, 3))
         outputs = self.module_dict.linear_block(inputs)
         labels = self.module_dict.embedding_block(labels)
-        outputs = outputs + torch.sum(inputs * labels, dim=1, keepdim=True)
+        outputs = outputs.squeeze(1) + torch.sum(inputs * labels, dim=1)
 
         return outputs
 
