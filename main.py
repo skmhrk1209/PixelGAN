@@ -172,7 +172,7 @@ def main():
                 fake_logits = discriminator(fake_images, real_labels)
 
                 generator_loss = torch.mean(nn.functional.softplus(-fake_logits) + kl_divergences * config.kl_divergence_weight)
-                generator_accuracy = torch.mean(torch.round(torch.sigmoid(fake_logits)) == 1)
+                generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
 
                 print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss} generator_accuracy: {generator_accuracy}')
 
@@ -188,7 +188,7 @@ def main():
                 fake_logits = discriminator(fake_images.detach(), real_labels)
 
                 discriminator_loss = torch.mean(nn.functional.softplus(-real_logits) + nn.functional.softplus(fake_logits))
-                discriminator_accuracy = torch.mean(torch.round(torch.sigmoid(real_logits)) == 1)
+                discriminator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(real_logits)), 1).float())
 
                 print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
 
