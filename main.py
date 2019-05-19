@@ -36,6 +36,14 @@ class Dict(dict):
     def __delattr__(self, name): del self[name]
 
 
+def apply(function, dictionary):
+    if isinstance(dictionary, dict):
+        for key, value in dictionary.items():
+            dictionary[key] = apply(function, value)
+        dictionary = function(dictionary)
+    return dictionary
+
+
 def main():
 
     distributed.init_process_group(backend='nccl')
@@ -48,12 +56,11 @@ def main():
         global_rank=distributed.get_rank(),
         device_count=torch.cuda.device_count()
     ))
-    torch.cuda.set_device(config.local_rank)
-    print(f'Enabled distributed training. ('
-          f'global_rank: {config.global_rank}/{config.world_size} '
-          f'local_rank: {config.local_rank}/{config.device_count}))')
+    config = apply(Dict, config)
+    print(f"config: {config}")
 
     torch.manual_seed(0)
+    torch.cuda.set_device(config.local_rank)
 
     generator = nn.Sequential(
         nn.Sequential(
