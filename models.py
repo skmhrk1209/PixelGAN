@@ -53,7 +53,7 @@ class Generator(nn.Module):
 
         self.module_dict = nn.ModuleDict(dict(
             first_linear_block=nn.Sequential(
-                nn.Linear(**linear_params[1]),
+                nn.Linear(**linear_params[0]),
                 nn.Tanh()
             ),
             linear_blocks=nn.ModuleList([
