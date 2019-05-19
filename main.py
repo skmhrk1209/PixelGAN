@@ -83,7 +83,8 @@ def main():
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2, bias=False),
             Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2, bias=False)
         ],
-        linear_param=Dict(in_features=64, out_features=10)
+        linear_param=Dict(in_features=64, out_features=10),
+        embedding_param=Dict(num_embeddings=10, embedding_dim=64)
     ).cuda()
 
     generator_optimizer = torch.optim.Adam([
