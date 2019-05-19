@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='config.json')
 parser.add_argument('--image_size', type=int, default=28)
 parser.add_argument('--checkpoint', type=str, default='')
-parser.add_argument('--training', action='store_true')
+parser.add_argument('--train', action='store_true')
 parser.add_argument('--generate', action='store_true')
 parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
@@ -124,7 +124,7 @@ def main():
 
     summary_writer = SummaryWriter(config.event_directory)
 
-    if config.training:
+    if config.train:
 
         os.makedirs(config.checkpoint_directory, exist_ok=True)
         os.makedirs(config.event_directory, exist_ok=True)
