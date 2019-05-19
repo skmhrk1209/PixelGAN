@@ -37,7 +37,7 @@ class VAE(nn.Module):
             inputs = linear_block(inputs)
 
         inputs = self.module_dict.linear_block(inputs)
-        means, logvars = torch.split(inputs, 2, dim=1)
+        means, logvars = torch.chunk(inputs, 2, dim=1)
 
         latents = torch.randn_like(means) * torch.exp(0.5 * logvars) + means
         kl_divergences = -0.5 * torch.sum(1 + logvars - torch.pow(means, 2) - torch.exp(logvars), dim=1)
