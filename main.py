@@ -225,9 +225,9 @@ def main():
                     )
 
                     print(f'[training] epoch: {epoch} step: {step} '
-                          f'variational_autoencoder_loss: {variational_autoencoder_loss:.2f} '
-                          f'generator_loss: {generator_loss:.2f} generator_accuracy: {generator_accuracy:.2f} '
-                          f'discriminator_loss: {discriminator_loss:.2f} discriminator_accuracy: {discriminator_accuracy:.2f}')
+                          f'variational_autoencoder_loss: {variational_autoencoder_loss:.4f} '
+                          f'generator_loss: {generator_loss:.4f} generator_accuracy: {generator_accuracy:.4f} '
+                          f'discriminator_loss: {discriminator_loss:.4f} discriminator_accuracy: {discriminator_accuracy:.4f}')
 
             torch.save(dict(
                 variational_autoencoder_state_dict=variational_autoencoder.state_dict(),
