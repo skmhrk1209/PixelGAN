@@ -203,6 +203,7 @@ def main():
                 generator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
+                    global_step = len(data_loader) * epoch + step
                     summary_writer.add_images(
                         tag='real_images',
                         img_tensor=real_images
