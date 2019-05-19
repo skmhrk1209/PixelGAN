@@ -67,7 +67,7 @@ def main():
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2),
             Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2)
         ],
-        linear_params=Dict(in_features=64, out_features=64)
+        linear_param=Dict(in_features=64, out_features=64)
     ).cuda()
 
     generator = models.Generator(
