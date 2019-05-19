@@ -167,8 +167,6 @@ def main():
                 generator_loss = torch.mean(nn.functional.softplus(-fake_logits) + kl_divergences * config.kl_divergence_weight)
                 generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
 
-                print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss} generator_accuracy: {generator_accuracy}')
-
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
                     scaled_generator_loss.backward()
@@ -180,15 +178,15 @@ def main():
                 discriminator_loss = torch.mean(nn.functional.softplus(-real_logits) + nn.functional.softplus(fake_logits))
                 discriminator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(real_logits)), 1).float())
 
-                print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
-
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
                     scaled_discriminator_loss.backward()
                 discriminator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
+
                     global_step = len(data_loader) * epoch + step
+
                     summary_writer.add_images(
                         tag='real_images',
                         img_tensor=real_images.repeat(1, 3, 1, 1),
@@ -207,6 +205,9 @@ def main():
                             global_step=global_step
                         )
                     )
+
+                    print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss} generator_accuracy: {generator_accuracy}')
+                    print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
 
             torch.save(dict(
                 encoder_state_dict=encoder.state_dict(),
