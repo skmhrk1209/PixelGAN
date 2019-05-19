@@ -57,7 +57,7 @@ def main():
         device_count=torch.cuda.device_count()
     ))
     config = apply(Dict, config)
-    print(f"config: {config}")
+    print(f'config: {config}')
 
     torch.manual_seed(0)
     torch.cuda.set_device(config.local_rank)
@@ -130,7 +130,7 @@ def main():
         os.makedirs(config.event_directory, exist_ok=True)
 
         dataset = datasets.MNIST(
-            root="mnist",
+            root='mnist',
             train=True,
             download=True,
             transform=transforms.Compose([
