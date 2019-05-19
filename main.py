@@ -219,8 +219,8 @@ def main():
                 fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1).unsqueeze(-1).unsqueeze(-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
 
-                real_logits = discriminator(real_images)
-                fake_logits = discriminator(fake_images.detach())
+                real_logits = discriminator(real_images).reshape(-1, 10)
+                fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
 
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1))
                 real_logits = real_logits.squeeze(-1)
