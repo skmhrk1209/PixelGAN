@@ -150,7 +150,7 @@ def main():
 
         data_loader = utils.data.DataLoader(
             dataset=dataset,
-            batch_size=config.batch_size,
+            batch_size=config.local_batch_size,
             num_workers=config.num_workers,
             sampler=sampler,
             pin_memory=True
