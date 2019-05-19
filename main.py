@@ -203,6 +203,7 @@ def main():
                 generator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
+                    print(real_images.shape, fake_images.shape)
                     summary_writer.add_images(
                         tag='real_images',
                         img_tensor=real_images
