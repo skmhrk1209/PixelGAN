@@ -63,11 +63,11 @@ def main():
     torch.cuda.set_device(config.local_rank)
 
     variational_autoencoder = models.VariationalAutoencoder(
-        conv_params=[
-            Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2),
-            Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2)
+        linear_params=[
+            Dict(in_features=784, out_features=512),
+            Dict(in_features=512, out_features=512)
         ],
-        linear_param=Dict(in_features=64, out_features=64)
+        linear_param=Dict(in_features=512, out_features=64)
     ).cuda()
     generator = models.Generator(
         linear_params=[
