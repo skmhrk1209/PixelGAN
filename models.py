@@ -74,32 +74,30 @@ class Discriminator(nn.Module):
 
 class VariationalAutoencoder(nn.Module):
 
-    def __init__(self, conv_params, linear_param):
+    def __init__(self, linear_params):
 
         super().__init__()
 
         self.module_dict = nn.ModuleDict(dict(
-            conv_blocks=nn.ModuleList([
+            linear_blocks=nn.ModuleList([
                 nn.Sequential(
-                    nn.Conv2d(**conv_param),
+                    nn.Linear(**linear_param),
                     nn.ReLU()
-                ) for conv_param in conv_params
+                ) for linear_param in linear_params[:-1]
             ]),
-            linear_block=nn.Sequential(
-                nn.Linear(**linear_param)
-            )
+            linear_block=nn.Linear(**linear_params[-1])
         ))
 
     def forward(self, inputs):
 
-        for conv_block in self.module_dict.conv_blocks:
-            inputs = conv_block(inputs)
+        for linear_block in self.module_dict.linear_blocks:
+            inputs = linear_block(inputs)
 
-        inputs = torch.mean(inputs, dim=(2, 3))
         inputs = self.module_dict.linear_block(inputs)
 
-        means, logvars = torch.chunk(inputs, 2, dim=1)
-        latents = torch.randn_like(means) * torch.exp(0.5 * logvars) + means
-        kl_divergences = -0.5 * torch.sum(1 + logvars - torch.pow(means, 2) - torch.exp(logvars), dim=1)
+        means, log_variances = torch.chunk(inputs, 2, dim=1)
+        standard_deviations = torch.exp(0.5 * log_variances)
+        latents = torch.randn_like(means) * standard_deviations + means
+        kl_divergences = -0.5 * torch.sum(1 + log_variances - means ** 2 - standard_deviations ** 2, dim=1)
 
         return latents, kl_divergences
