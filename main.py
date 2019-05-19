@@ -101,7 +101,7 @@ def main():
         betas=(config.discriminator_beta1, config.discriminator_beta2)
     )
 
-    [variational_autoencoder, generator. discriminator], [variational_autoencoder_optimizer, generator_optimizer, discriminator_optimizer] = amp.initialize(
+    [variational_autoencoder, generator, discriminator], [variational_autoencoder_optimizer, generator_optimizer, discriminator_optimizer] = amp.initialize(
         models=[variational_autoencoder, generator, discriminator],
         optimizers=[variational_autoencoder_optimizer, generator_optimizer, discriminator_optimizer],
         opt_level=config.opt_level
