@@ -76,7 +76,7 @@ def main():
     generator = models.Generator(
         linear_params=[
             Dict(in_features=34, out_features=32),
-            *[Dict(in_features=32, out_features=32)] * 128,
+            *[Dict(in_features=32, out_features=32)] * 32,
             Dict(in_features=32, out_features=1)
         ]
     ).cuda()
