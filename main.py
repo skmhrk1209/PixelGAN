@@ -62,7 +62,7 @@ def main():
     torch.manual_seed(0)
     torch.cuda.set_device(config.local_rank)
 
-    encoder = models.VAE(
+    variational_autoencoder = models.VariationalAutoencoder(
         conv_params=[
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2),
             Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2)
@@ -94,9 +94,9 @@ def main():
 
     generator_optimizer = torch.optim.Adam([
         dict(
-            params=encoder.parameters(),
-            lr=config.encoder_lr,
-            betas=(config.encoder_beta1, config.encoder_beta2)
+            params=variational_autoencoder.parameters(),
+            lr=config.variational_autoencoder_lr,
+            betas=(config.variational_autoencoder_beta1, config.variational_autoencoder_beta2)
         ),
         dict(
             params=generator.parameters(),
