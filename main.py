@@ -155,6 +155,8 @@ def main():
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
                 positions = positions.repeat(config.local_batch_size, 1)
 
+                print(labels.shape, latents.shape, positions.shape)
+
                 fake_images = generator(torch.cat((labels, latents, positions), dim=-1))
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
