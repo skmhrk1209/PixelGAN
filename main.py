@@ -87,18 +87,11 @@ def main():
         embedding_param=Dict(num_embeddings=10, embedding_dim=64)
     ).cuda()
 
-    generator_optimizer = torch.optim.Adam([
-        dict(
-            params=variational_autoencoder.parameters(),
-            lr=config.variational_autoencoder_lr,
-            betas=(config.variational_autoencoder_beta1, config.variational_autoencoder_beta2)
-        ),
-        dict(
-            params=generator.parameters(),
-            lr=config.generator_lr,
-            betas=(config.generator_beta1, config.generator_beta2)
-        )
-    ])
+    generator_optimizer = torch.optim.Adam(
+        params=list(generator.parameters()) + list(variational_autoencoder.parameters()),
+        lr=config.generator_lr,
+        betas=(config.generator_beta1, config.generator_beta2)
+    )
     discriminator_optimizer = torch.optim.Adam(
         params=discriminator.parameters(),
         lr=config.discriminator_lr,
