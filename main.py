@@ -179,6 +179,8 @@ def main():
                 positions = (positions - config.image_size / 2) / (config.image_size / 2)
                 positions = positions.repeat(config.local_batch_size, 1)
 
+                print(positions)
+
                 fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
