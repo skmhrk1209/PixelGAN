@@ -225,6 +225,7 @@ def main():
                     )
 
                     print(f'[training] epoch: {epoch} step: {step} '
+                          f'variational_autoencoder_loss: {variational_autoencoder_loss:.2f} '
                           f'generator_loss: {generator_loss:.2f} generator_accuracy: {generator_accuracy:.2f} '
                           f'discriminator_loss: {discriminator_loss:.2f} discriminator_accuracy: {discriminator_accuracy:.2f}')
 
