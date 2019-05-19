@@ -181,9 +181,6 @@ def main():
                     scaled_generator_loss.backward()
                 generator_optimizer.step()
 
-                if generator_accuracy < 0.9:
-                    continue
-
                 real_logits = discriminator(real_images, real_labels)
                 fake_logits = discriminator(fake_images.detach(), real_labels)
 
@@ -191,6 +188,9 @@ def main():
                 discriminator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(real_logits)), 1).float())
 
                 print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
+
+                if discriminator_accuracy > 0.9:
+                    continue
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
