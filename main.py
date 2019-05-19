@@ -101,10 +101,11 @@ def main():
         betas=(config.discriminator_beta1, config.discriminator_beta2)
     )
 
-    variational_autoencoder, variational_autoencoder_optimizer = amp.initialize(
-        variational_autoencoder, variational_autoencoder_optimizer, opt_level=config.opt_level)
-    generator, generator_optimizer = amp.initialize(generator, generator_optimizer, opt_level=config.opt_level)
-    discriminator, discriminator_optimizer = amp.initialize(discriminator, discriminator_optimizer, opt_level=config.opt_level)
+    [variational_autoencoder, generator. discriminator], [variational_autoencoder_optimizer, generator_optimizer, discriminator_optimizer] = amp.initialize(
+        models=[variational_autoencoder, generator, discriminator],
+        optimizers=[variational_autoencoder_optimizer, generator_optimizer, discriminator_optimizer],
+        opt_level=config.opt_level
+    )
 
     variational_autoencoder = parallel.DistributedDataParallel(variational_autoencoder, delay_allreduce=True)
     generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
@@ -114,6 +115,7 @@ def main():
     if config.checkpoint:
         checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(local_rank))
         variational_autoencoder.load_state_dict(checkpoint.variational_autoencoder_state_dict)
+        variational_autoencoder_optimizer.load_state_dict(checkpoint.variational_autoencoder_optimizer_state_dict)
         generator.load_state_dict(checkpoint.generator_state_dict)
         generator_optimizer.load_state_dict(checkpoint.generator_optimizer_state_dict)
         discriminator.load_state_dict(checkpoint.discriminator_state_dict)
@@ -228,6 +230,7 @@ def main():
 
             torch.save(dict(
                 variational_autoencoder_state_dict=variational_autoencoder.state_dict(),
+                variational_autoencoder_optimizer_state_dict=variational_autoencoder_optimizer.state_dict(),
                 generator_state_dict=generator.state_dict(),
                 generator_optimizer_state_dict=generator_optimizer.state_dict(),
                 discriminator_state_dict=discriminator.state_dict(),
