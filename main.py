@@ -198,7 +198,7 @@ def main():
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
-                    scaled_discriminator_loss.backward()
+                    scaled_discriminator_loss.backward(retain_graph=False)
                 discriminator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
