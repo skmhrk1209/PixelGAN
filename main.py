@@ -7,20 +7,20 @@ from torch import cuda
 from torch import backends
 from torchvision import datasets
 from torchvision import transforms
-from torchvision import models
 from tensorboardX import SummaryWriter
 from apex import amp
 from apex import parallel
 import argparse
 import json
 import os
+import models
 
-parser = argparse.ArgumentParser(description='ResNet50 training on Imagenet')
+parser = argparse.ArgumentParser()
 parser.add_argument('--config', type=str, default='config.json')
+parser.add_argument('--image_size', type=int, default=1024)
 parser.add_argument('--checkpoint', type=str, default='')
 parser.add_argument('--training', action='store_true')
-parser.add_argument('--evaluation', action='store_true')
-parser.add_argument('--inference', action='store_true')
+parser.add_argument('--generate', action='store_true')
 parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
 
@@ -62,48 +62,38 @@ def main():
     torch.manual_seed(0)
     torch.cuda.set_device(config.local_rank)
 
-    generator = nn.Sequential(
-        nn.Sequential(
-            nn.Conv2d(140, 128, 1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU()
-        ),
-        nn.Sequential(
-            nn.Conv2d(128, 128, 1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU()
-        ),
-        nn.Sequential(
-            nn.Conv2d(128, 128, 1, bias=False),
-            nn.BatchNorm2d(128),
-            nn.ReLU()
-        ),
-        nn.Sequential(
-            nn.Conv2d(128, 1, 1, bias=False),
-            nn.BatchNorm2d(1),
-            nn.Tanh()
-        )
+    encoder = models.VAE(
+        conv_params=[
+            Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2),
+            Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2)
+        ],
+        linear_params=[
+            Dict(in_features=2304, out_features=128),
+            Dict(in_features=128, out_features=64)
+        ]
     ).cuda()
 
-    discriminator = nn.Sequential(
-        nn.Sequential(
-            nn.Conv2d(1, 32, 3, padding=2),
-            nn.MaxPool2d(2, 2),
-            nn.ReLU()
-        ),
-        nn.Sequential(
-            nn.Conv2d(32, 64, 3, padding=2),
-            nn.MaxPool2d(2, 2),
-            nn.ReLU()
-        ),
-        nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(64, 10, 1)
-        ),
+    generator = models.Generator(
+        linear_params=[
+            Dict(in_features=34, out_features=32),
+            *[Dict(in_features=32, out_features=32)] * 128,
+            Dict(in_features=32, out_features=1)
+        ]
+    ).cuda()
+
+    discriminator = models.Discriminator(
+        conv_params=[
+            Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2, bias=False),
+            Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2, bias=False)
+        ],
+        linear_params=[
+            Dict(in_features=2304, out_features=128),
+            Dict(in_features=128, out_features=10)
+        ]
     ).cuda()
 
     generator_optimizer = torch.optim.Adam(
-        params=generator.parameters(),
+        params=encoder.parameters() + generator.parameters(),
         lr=config.generator_lr,
         betas=(config.generator_beta1, config.generator_beta2)
     )
@@ -140,9 +130,7 @@ def main():
             train=True,
             download=True,
             transform=transforms.Compose([
-                transforms.Resize(config.image_size),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
+                transforms.ToTensor()
             ])
         )
 
@@ -166,11 +154,10 @@ def main():
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
 
+                latents, kl_divergences = encoder(real_images)
+
                 latents = torch.randn(config.local_batch_size, 128, device='cuda')
                 latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
-
-                labels = nn.functional.embedding(real_labels, torch.eye(10, 10, device='cuda'))
-                labels = labels.repeat(1, 1 * config.image_size ** 2).reshape(-1, 10)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
@@ -179,7 +166,7 @@ def main():
                 positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
                 positions = positions.repeat(config.local_batch_size, 1)
 
-                fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
+                fake_images = generator(torch.cat((latents, positions), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
@@ -199,11 +186,10 @@ def main():
                 discriminator_optimizer.step()
 
                 fake_logits = discriminator(fake_images).reshape(-1, 10)
-
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 fake_losses = nn.functional.softplus(-fake_logits)
-                generator_losses = fake_losses
+                generator_losses = fake_losses + kl_divergences * config.kl_divergence_weight
 
                 generator_loss = torch.mean(generator_losses)
                 generator_optimizer.zero_grad()
@@ -214,11 +200,11 @@ def main():
                 if step % 100 == 0 and config.global_rank == 0:
                     summary_writer.add_image(
                         tag='real_images',
-                        img_tensor=real_images.squeeze(0)
+                        img_tensor=real_images
                     )
                     summary_writer.add_image(
                         tag='fake_images',
-                        img_tensor=fake_images.squeeze(0)
+                        img_tensor=fake_images
                     )
                     summary_writer.add_scalars(
                         main_tag='training',
@@ -231,6 +217,7 @@ def main():
                           f'generator_loss: {generator_loss} discriminator_loss: {discriminator_loss}')
 
             torch.save(dict(
+                encoder_state_dict=encoder.state_dict(),
                 generator_state_dict=generator.state_dict(),
                 generator_optimizer_state_dict=generator_optimizer.state_dict(),
                 discriminator_state_dict=discriminator.state_dict(),
