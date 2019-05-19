@@ -206,13 +206,11 @@ def main():
                     global_step = len(data_loader) * epoch + step
                     summary_writer.add_images(
                         tag='real_images',
-                        img_tensor=real_images,
-                        dataformats="NHW"
+                        img_tensor=real_images.repeat(1, 3, 1, 1)
                     )
                     summary_writer.add_images(
                         tag='fake_images',
-                        img_tensor=fake_images,
-                        dataformats="NHW"
+                        img_tensor=fake_images.repeat(1, 3, 1, 1)
                     )
                     summary_writer.add_scalars(
                         main_tag='training',
