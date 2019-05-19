@@ -214,7 +214,7 @@ def main():
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
                 z, y, x = torch.meshgrid(z, y, x)
-                positions = torch.stack((z.reshape(-1), y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).float()
+                positions = torch.stack((z.reshape(-1), y.reshape(-1), x.reshape(-1)), dim=-1).repeat(config.local_batch_size, 1).unsqueeze(-1).unsqueeze(-1).float()
 
                 fake_images = generator(torch.cat((latents, labels, positions.float()), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
