@@ -15,23 +15,9 @@ class Generator(nn.Module):
             ),
             linear_blocks=nn.ModuleList([
                 nn.Sequential(
-                    nn.Sequential(
-                        nn.Linear(**linear_param),
-                        nn.ReLU()
-                    ),
-                    nn.Sequential(
-                        nn.Linear(**linear_param),
-                        nn.ReLU()
-                    ),
-                    nn.Sequential(
-                        nn.Linear(**linear_param),
-                        nn.ReLU()
-                    ),
-                    nn.Sequential(
-                        nn.Linear(**linear_param),
-                        nn.Tanh()
-                    )
-                ) for linear_param in linear_params[1:-1]
+                    nn.Linear(**linear_param),
+                    nn.Tanh() if i % 4 == 0 else nn.ReLU()
+                ) for i, linear_param in enumerate(linear_params[1:-1])
             ]),
             last_linear_block=nn.Sequential(
                 nn.Linear(**linear_params[-1]),
@@ -43,8 +29,12 @@ class Generator(nn.Module):
 
         inputs = self.module_dict.first_linear_block(inputs)
 
+        shortcut = inputs
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
-            inputs = inputs + linear_block(inputs)
+            inputs = linear_block(inputs)
+            if i and i % 4 == 0:
+                inputs = inputs + shortcut
+                shortcut = inputs
 
         inputs = self.module_dict.last_linear_block(inputs)
 
