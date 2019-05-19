@@ -92,11 +92,18 @@ def main():
         ]
     ).cuda()
 
-    generator_optimizer = torch.optim.Adam(
-        params=encoder.parameters() + generator.parameters(),
-        lr=config.generator_lr,
-        betas=(config.generator_beta1, config.generator_beta2)
-    )
+    generator_optimizer = torch.optim.Adam([
+        dict(
+            params=encoder.parameters(),
+            lr=config.encoder_lr,
+            betas=(config.encoder_beta1, config.encoder_beta2)
+        ),
+        dict(
+            params=generator.parameters(),
+            lr=config.generator_lr,
+            betas=(config.generator_beta1, config.generator_beta2)
+        )
+    ])
     discriminator_optimizer = torch.optim.Adam(
         params=discriminator.parameters(),
         lr=config.discriminator_lr,
@@ -155,19 +162,17 @@ def main():
                 real_labels = real_labels.cuda()
 
                 latents, kl_divergences = encoder(real_images)
+                latents = latents.repeat(1, 1 * 28 ** 2).reshape(-1, 128)
 
-                latents = torch.randn(config.local_batch_size, 128, device='cuda')
-                latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
-
-                y = torch.arange(config.image_size).cuda()
-                x = torch.arange(config.image_size).cuda()
+                y = torch.arange(28).cuda()
+                x = torch.arange(28).cuda()
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
-                positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
+                positions = (positions.float() - 28 / 2) / (28 / 2)
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
-                fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
+                fake_images = fake_images.reshape(config.local_batch_size, 1, 28, 28)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
                 fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
