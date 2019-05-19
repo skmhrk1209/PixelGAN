@@ -174,7 +174,7 @@ def main():
 
                 fake_logits = discriminator(fake_images, real_labels)
 
-                variational_autoencoder_loss = torch.mean(kl_divergences * config.kl_divergence_weight)
+                variational_autoencoder_loss = torch.mean(kl_divergences) * config.variational_autoencoder_loss_weight
 
                 generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
                 generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
