@@ -136,7 +136,8 @@ def main():
             batch_size=config.local_batch_size,
             num_workers=config.num_workers,
             sampler=sampler,
-            pin_memory=True
+            pin_memory=True,
+            drop_last=True
         )
 
         for epoch in range(last_epoch + 1, config.num_epochs):
@@ -207,7 +208,8 @@ def main():
                     )
 
                     print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss} generator_accuracy: {generator_accuracy}')
-                    print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
+                    print(
+                        f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
 
             torch.save(dict(
                 encoder_state_dict=encoder.state_dict(),
