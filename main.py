@@ -166,7 +166,7 @@ def main():
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
-                    scaled_generator_loss.backward(retain_graph=False)
+                    scaled_generator_loss.backward()
                 generator_optimizer.step()
 
                 real_logits = discriminator(real_images, real_labels)
@@ -180,7 +180,7 @@ def main():
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
-                    scaled_discriminator_loss.backward(retain_graph=False)
+                    scaled_discriminator_loss.backward()
                 discriminator_optimizer.step()
 
                 if step % 100 == 0 and config.global_rank == 0:
