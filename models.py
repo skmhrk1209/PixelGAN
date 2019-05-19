@@ -99,6 +99,7 @@ class VariationalAutoencoder(nn.Module):
         inputs = self.module_dict.linear_block(inputs)
 
         means, logvars = torch.chunk(inputs, 2, dim=1)
+        print(means, logvars)
         latents = torch.randn_like(means) * torch.exp(0.5 * logvars) + means
         kl_divergences = -0.5 * torch.sum(1 + logvars - torch.pow(means, 2) - torch.exp(logvars), dim=1)
 
