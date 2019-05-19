@@ -181,11 +181,11 @@ def main():
 
                 variational_autoencoder_optimizer.zero_grad()
                 with amp.scale_loss(variational_autoencoder_loss, variational_autoencoder_optimizer) as scaled_variational_autoencoder_loss:
-                    scaled_variational_autoencoder_loss.backward()
+                    scaled_variational_autoencoder_loss.backward(retain_graph=True)
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
-                    scaled_generator_loss.backward()
+                    scaled_generator_loss.backward(retain_graph=False)
 
                 variational_autoencoder_optimizer.step()
                 generator_optimizer.step()
