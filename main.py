@@ -159,7 +159,7 @@ def main():
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
 
-                latents, kl_divergences = variational_autoencoder(real_images)
+                latents, kl_divergences = variational_autoencoder(real_images.reshape(-1, config.image_size ** 2))
                 latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 32)
 
                 y = torch.arange(config.image_size).cuda()
@@ -170,7 +170,7 @@ def main():
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
-                fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
+                fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
                 fake_logits = discriminator(fake_images, real_labels)
 
