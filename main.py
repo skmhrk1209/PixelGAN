@@ -182,6 +182,9 @@ def main():
                 fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
                 fake_images = fake_images.reshape(config.local_batch_size, config.image_size, config.image_size)
 
+                print(real_images.shape)
+                print(fake_images.shape)
+
                 real_images = real_images.unsqueeze(1)
                 fake_images = fake_images.unsqueeze(1)
 
