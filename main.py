@@ -189,9 +189,6 @@ def main():
 
                 print(f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
 
-                if discriminator_accuracy > 0.9:
-                    continue
-
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
                     scaled_discriminator_loss.backward()
