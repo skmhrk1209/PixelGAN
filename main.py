@@ -206,11 +206,11 @@ def main():
                     print(real_images.shape, fake_images.shape)
                     summary_writer.add_images(
                         tag='real_images',
-                        img_tensor=real_images
+                        img_tensor=real_images.squeeze()
                     )
                     summary_writer.add_images(
                         tag='fake_images',
-                        img_tensor=fake_images
+                        img_tensor=fake_images.squeeze()
                     )
                     summary_writer.add_scalars(
                         main_tag='training',
