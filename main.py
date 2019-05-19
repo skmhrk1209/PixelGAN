@@ -211,7 +211,7 @@ def main():
                     )
                     summary_writer.add_images(
                         tag='fake_images',
-                        img_tensor=fake_images,
+                        img_tensor=fake_images.squeeze(),
                         dataformats="NHW"
                     )
                     summary_writer.add_scalars(
