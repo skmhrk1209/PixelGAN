@@ -66,7 +66,11 @@ class Generator(nn.Module):
 
     def forward(self, inputs):
 
-        for linear_block in self.module_dict.linear_blocks:
+        shortcut = inputs
+        for i, linear_block in enumerate(self.module_dict.linear_blocks):
+            if i and i % 2 == 0:
+                inputs += shortcut
+                shortcut = inputs
             inputs = linear_block(inputs)
 
         inputs = self.module_dict.linear_block(inputs)
