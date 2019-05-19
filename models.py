@@ -70,10 +70,10 @@ class Generator(nn.Module):
                         nn.Linear(**linear_param),
                         nn.ReLU()
                     ),
-                    nn.Sequential([
+                    nn.Sequential(
                         nn.Linear(**linear_param),
-                        nn.Tanh(),
-                    ])
+                        nn.Tanh()
+                    )
                 ) for linear_param in linear_params[1:-1]
             ]),
             last_linear_block=nn.Sequential(
