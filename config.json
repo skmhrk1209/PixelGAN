@@ -5,7 +5,7 @@
     "encoder_lr": 0.004,
     "encoder_beta1": 0.9,
     "encoder_beta2": 0.999,
-    "generator_lr": 0.004,
+    "generator_lr": 0.01,
     "generator_beta1": 0.9,
     "generator_beta2": 0.999,
     "discriminator_lr": 0.001,
