@@ -73,7 +73,7 @@ def main():
     generator = models.Generator(
         linear_params=[
             Dict(in_features=34, out_features=32),
-            *[Dict(in_features=32, out_features=32)] * 32,
+            *[Dict(in_features=32, out_features=32)] * 128,
             Dict(in_features=32, out_features=1)
         ]
     ).cuda()
@@ -155,7 +155,7 @@ def main():
                 real_images = real_images.cuda()
                 real_labels = real_labels.cuda()
 
-                latents, kl_divergences = encoder(real_images)
+                latents, kl_divergences = variational_autoencoder(real_images)
                 latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 32)
 
                 y = torch.arange(config.image_size).cuda()
