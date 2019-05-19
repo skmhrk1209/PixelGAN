@@ -65,9 +65,9 @@ def main():
     variational_autoencoder = models.VariationalAutoencoder(
         linear_params=[
             Dict(in_features=784, out_features=512),
-            Dict(in_features=512, out_features=512)
-        ],
-        linear_param=Dict(in_features=512, out_features=64)
+            Dict(in_features=512, out_features=512),
+            Dict(in_features=512, out_features=64)
+        ]
     ).cuda()
     generator = models.Generator(
         linear_params=[
