@@ -9,8 +9,6 @@ from torchvision import datasets
 from torchvision import transforms
 from torchvision import models
 from tensorboardX import SummaryWriter
-from nvidia import dali
-from nvidia.dali.plugin import pytorch
 from apex import amp
 from apex import parallel
 import argparse
@@ -36,43 +34,6 @@ class Dict(dict):
     def __setattr__(self, name, value): self[name] = value
 
     def __delattr__(self, name): del self[name]
-
-
-class Pipeline(dali.pipeline.Pipeline):
-
-    def __init__(self, root, batch_size, num_threads, device_id, num_shards, shard_id,
-                 image_size, shuffle=False, mirror=False):
-
-        super().__init__(batch_size, num_threads, device_id, seed=device_id)
-
-        self.reader = dali.ops.FileReader(
-            file_root=root,
-            num_shards=num_shards,
-            shard_id=shard_id,
-            random_shuffle=shuffle
-        )
-        self.decoder = dali.ops.nvJPEGDecoder(
-            device='mixed'
-        )
-        self.resize = dali.ops.Resize(
-            device='gpu',
-            resize_x=image_size,
-            resize_y=image_size
-        )
-        self.normalize = dali.ops.CropMirrorNormalize(
-            device='gpu',
-            crop=(image_size, image_size),
-            mean=(127, 127, 127),
-            std=(127, 127, 127)
-        )
-        self.coin = dali.ops.CoinFlip(probability=0.5 if mirror else 0.0)
-
-    def define_graph(self):
-        images, labels = self.reader()
-        images = self.decoder(images)
-        images = self.resize(images)
-        images = self.normalize(images, mirror=self.coin())
-        return images, labels
 
 
 def main():
@@ -167,28 +128,24 @@ def main():
         os.makedirs(config.checkpoint_directory, exist_ok=True)
         os.makedirs(config.event_directory, exist_ok=True)
 
-        # NOTE: When partition for distributed training executed?
-        # NOTE: Should random seed be the same in the same node?
-        pipeline = Pipeline(
-            root=config.train_root,
-            batch_size=config.local_batch_size,
-            num_threads=config.num_workers,
-            device_id=config.local_rank,
-            num_shards=config.world_size,
-            shard_id=config.global_rank,
-            image_size=config.image_size,
-            shuffle=True,
-            mirror=False
+        dataset = datasets.MNIST(
+            root="mnist",
+            train=True,
+            download=True,
+            transform=transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+            ])
         )
-        pipeline.build()
 
-        # NOTE: What's `epoch_size`?
-        # NOTE: Is that len(dataset) ?
-        data_loader = pytorch.DALIClassificationIterator(
-            pipelines=pipeline,
-            size=list(pipeline.epoch_size().values())[0] // config.world_size,
-            auto_reset=True,
-            stop_at_epoch=True
+        sampler = utils.data.distributed.DistributedSampler(dataset)
+
+        data_loader = utils.data.DataLoader(
+            dataset=dataset,
+            batch_size=config.batch_size,
+            num_workers=config.num_workers,
+            sampler=sampler,
+            pin_memory=True
         )
 
         for epoch in range(last_epoch + 1, config.num_epochs):

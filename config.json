@@ -1,6 +1,6 @@
 {
     "image_size": 28,
-    "num_workers": 4,
+    "num_workers": 0,
     "num_epochs": 100,
     "local_batch_size": 1,
     "generator_lr": 0.004,
