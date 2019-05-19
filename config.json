@@ -3,7 +3,7 @@
     "num_workers": 4,
     "num_epochs": 100,
     "local_batch_size": 1,
-    "generator_lr": 0.001,
+    "generator_lr": 0.004,
     "generator_beta1": 0.9,
     "generator_beta2": 0.999,
     "discriminator_lr": 0.001,

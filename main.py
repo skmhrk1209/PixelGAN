@@ -61,9 +61,9 @@ class Pipeline(dali.pipeline.Pipeline):
         )
         self.normalize = dali.ops.CropMirrorNormalize(
             device='gpu',
-            crop=image_size,
-            mean=(0.485 * 255, 0.456 * 255, 0.406 * 255),
-            std=(0.229 * 255, 0.224 * 255, 0.225 * 255)
+            crop=(image_size, image_size),
+            mean=(127, 127, 127),
+            std=(127, 127, 127)
         )
         self.coin = dali.ops.CoinFlip(probability=0.5 if mirror else 0.0)
 
@@ -96,23 +96,43 @@ def main():
 
     generator = nn.Sequential(
         nn.Sequential(
-            nn.Linear(141, 32),
+            nn.Conv2d(141, 128, 1, bias=False),
+            nn.BatchNorm2d(128),
             nn.Tanh()
         ),
-        *[nn.Sequential(
-            nn.Linear(32, 32),
-            nn.Tanh()
-        ) for _ in range(128)],
         nn.Sequential(
-            nn.Linear(32, 1),
+            nn.Conv2d(128, 128, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.Tanh()
+        ),
+        nn.Sequential(
+            nn.Conv2d(128, 128, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.Tanh()
+        ),
+        nn.Sequential(
+            nn.Conv2d(128, 1, 1, bias=False),
+            nn.BatchNorm2d(128),
             nn.Tanh()
         )
-    )
-    generator = generator.cuda()
+    ).cuda()
 
-    discriminator = models.resnet18()
-    discriminator.fc = nn.Linear(in_features=512, out_features=10, bias=True)
-    discriminator = discriminator.cuda()
+    discriminator = nn.Sequential(
+        nn.Sequential(
+            nn.Conv2d(3, 32, 3, padding=2),
+            nn.MaxPool2d(2, 2),
+            nn.ReLU()
+        ),
+        nn.Sequential(
+            nn.Conv2d(32, 64, 3, padding=2),
+            nn.MaxPool2d(2, 2),
+            nn.ReLU()
+        ),
+        nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(64, 10, 1)
+        ),
+    ).cuda()
 
     generator_optimizer = torch.optim.Adam(
         params=generator.parameters(),
