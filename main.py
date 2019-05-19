@@ -176,7 +176,7 @@ def main():
                 x = torch.arange(config.image_size).cuda()
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
-                positions = (positions - config.image_size / 2) / (config.image_size / 2)
+                positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 print(positions)
