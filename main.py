@@ -77,6 +77,8 @@ class Pipeline(dali.pipeline.Pipeline):
 
 def main():
 
+    print(torch.backends.cudnn.enabled)
+
     distributed.init_process_group(backend='nccl')
 
     with open(args.config) as file:
