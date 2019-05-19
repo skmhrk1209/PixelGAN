@@ -162,16 +162,14 @@ def main():
                 real_labels = real_labels.cuda()
 
                 latents, kl_divergences = encoder(real_images)
-                latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
+                latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 32)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
                 y, x = torch.meshgrid(y, x)
                 positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=-1)
                 positions = (positions.float() - config.image_size / 2) / (config.image_size / 2)
-                print(positions.shape)
                 positions = positions.repeat(config.local_batch_size, 1)
-                print(positions.shape)
 
                 fake_images = generator(torch.cat((latents, positions), dim=-1))
                 fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
