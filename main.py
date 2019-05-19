@@ -69,7 +69,6 @@ def main():
         ],
         linear_param=Dict(in_features=64, out_features=64)
     ).cuda()
-
     generator = models.Generator(
         linear_params=[
             Dict(in_features=34, out_features=32),
@@ -77,7 +76,6 @@ def main():
             Dict(in_features=32, out_features=1)
         ]
     ).cuda()
-
     discriminator = models.Discriminator(
         conv_params=[
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2, bias=False),
@@ -87,8 +85,13 @@ def main():
         embedding_param=Dict(num_embeddings=10, embedding_dim=64)
     ).cuda()
 
+    variational_autoencoder_optimizer = torch.optim.Adam(
+        params=variational_autoencoder.parameters(),
+        lr=config.variational_autoencoder_lr,
+        betas=(config.variational_autoencoder_beta1, config.variational_autoencoder_beta2)
+    )
     generator_optimizer = torch.optim.Adam(
-        params=list(generator.parameters()) + list(variational_autoencoder.parameters()),
+        params=generator.parameters(),
         lr=config.generator_lr,
         betas=(config.generator_beta1, config.generator_beta2)
     )
@@ -98,15 +101,19 @@ def main():
         betas=(config.discriminator_beta1, config.discriminator_beta2)
     )
 
+    variational_autoencoder, variational_autoencoder_optimizer = amp.initialize(
+        variational_autoencoder, variational_autoencoder_optimizer, opt_level=config.opt_level)
     generator, generator_optimizer = amp.initialize(generator, generator_optimizer, opt_level=config.opt_level)
     discriminator, discriminator_optimizer = amp.initialize(discriminator, discriminator_optimizer, opt_level=config.opt_level)
 
+    variational_autoencoder = parallel.DistributedDataParallel(variational_autoencoder, delay_allreduce=True)
     generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
     discriminator = parallel.DistributedDataParallel(discriminator, delay_allreduce=True)
 
     last_epoch = -1
     if config.checkpoint:
         checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(local_rank))
+        variational_autoencoder.load_state_dict(checkpoint.variational_autoencoder_state_dict)
         generator.load_state_dict(checkpoint.generator_state_dict)
         generator_optimizer.load_state_dict(checkpoint.generator_optimizer_state_dict)
         discriminator.load_state_dict(checkpoint.discriminator_state_dict)
@@ -165,12 +172,20 @@ def main():
 
                 fake_logits = discriminator(fake_images, real_labels)
 
-                generator_loss = torch.mean(nn.functional.softplus(-fake_logits) + kl_divergences * config.kl_divergence_weight)
+                variational_autoencoder_loss = torch.mean(kl_divergences * config.kl_divergence_weight)
+
+                generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
                 generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
+
+                variational_autoencoder_optimizer.zero_grad()
+                with amp.scale_loss(variational_autoencoder_loss, variational_autoencoder_optimizer) as scaled_variational_autoencoder_loss:
+                    scaled_variational_autoencoder_loss.backward()
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
                     scaled_generator_loss.backward()
+
+                variational_autoencoder_optimizer.step()
                 generator_optimizer.step()
 
                 real_logits = discriminator(real_images, real_labels)
@@ -207,12 +222,12 @@ def main():
                         )
                     )
 
-                    print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss} generator_accuracy: {generator_accuracy}')
-                    print(
-                        f'[training] epoch: {epoch} step: {step} discriminator_loss: {discriminator_loss} discriminator_accuracy: {discriminator_accuracy}')
+                    print(f'[training] epoch: {epoch} step: {step} '
+                          f'generator_loss: {generator_loss:.2f} generator_accuracy: {generator_accuracy:.2f} '
+                          f'discriminator_loss: {discriminator_loss:.2f} discriminator_accuracy: {discriminator_accuracy:.2f}')
 
             torch.save(dict(
-                encoder_state_dict=encoder.state_dict(),
+                variational_autoencoder_state_dict=variational_autoencoder.state_dict(),
                 generator_state_dict=generator.state_dict(),
                 generator_optimizer_state_dict=generator_optimizer.state_dict(),
                 discriminator_state_dict=discriminator.state_dict(),
