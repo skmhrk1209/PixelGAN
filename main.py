@@ -80,7 +80,7 @@ def main():
 
     discriminator = nn.Sequential(
         nn.Sequential(
-            nn.Conv2d(3, 32, 3, padding=2),
+            nn.Conv2d(1, 32, 3, padding=2),
             nn.MaxPool2d(2, 2),
             nn.ReLU()
         ),
@@ -133,6 +133,7 @@ def main():
             train=True,
             download=True,
             transform=transforms.Compose([
+                transforms.Resize(config.image_size),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
             ])
@@ -162,10 +163,10 @@ def main():
                 real_labels = real_labels.squeeze(-1).long().cuda()
 
                 latents = torch.randn(config.local_batch_size, 128, device='cuda')
-                latents = latents.repeat(1, 3 * config.image_size ** 2).reshape(-1, 128)
+                latents = latents.repeat(1, 1 * config.image_size ** 2).reshape(-1, 128)
 
                 labels = nn.functional.embedding(real_labels, torch.eye(10, 10, device='cuda'))
-                labels = labels.repeat(1, 3 * config.image_size ** 2).reshape(-1, 10)
+                labels = labels.repeat(1, 1 * config.image_size ** 2).reshape(-1, 10)
 
                 y = torch.arange(config.image_size).cuda()
                 x = torch.arange(config.image_size).cuda()
@@ -175,7 +176,7 @@ def main():
                 positions = positions.repeat(config.local_batch_size, 1)
 
                 fake_images = generator(torch.cat((latents, labels, positions), dim=-1).unsqueeze(-1).unsqueeze(-1))
-                fake_images = fake_images.reshape(config.local_batch_size, 3, config.image_size, config.image_size)
+                fake_images = fake_images.reshape(config.local_batch_size, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images).reshape(-1, 10)
                 fake_logits = discriminator(fake_images.detach()).reshape(-1, 10)
