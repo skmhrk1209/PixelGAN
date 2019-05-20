@@ -147,7 +147,6 @@ def main():
             for step, (real_images, real_labels) in enumerate(data_loader):
 
                 real_images = real_images.cuda()
-                real_images.requires_grad_(True)
                 real_labels = real_labels.cuda()
 
                 labels = nn.functional.embedding(real_labels, torch.eye(10, device='cuda'))
@@ -164,12 +163,11 @@ def main():
 
                 fake_images = generator(torch.cat((labels, latents, positions), dim=1))
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
-                fake_images.requires_grad_(True)
 
-                real_logits = discriminator(real_images, real_labels)
+                real_logits = discriminator(real_images.requires_grad_(True), real_labels)
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
-                fake_logits = discriminator(fake_images.detach(), real_labels)
+                fake_logits = discriminator(fake_images.detach().requires_grad_(True), real_labels)
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 discriminator_loss = torch.mean(nn.functional.softplus(-real_logits))
