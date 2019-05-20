@@ -207,7 +207,9 @@ def main():
                         main_tag='training',
                         tag_scalar_dict=dict(
                             generator_loss=generator_loss,
+                            generator_accuracy=generator_accuracy,
                             discriminator_loss=discriminator_loss,
+                            discriminator_accuracy=discriminator_accuracy,
                             global_step=global_step
                         )
                     )
