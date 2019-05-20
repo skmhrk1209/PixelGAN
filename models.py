@@ -27,7 +27,7 @@ class Generator(nn.Module):
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
             inputs = linear_block(inputs)
             if i % 2 == 0:
-                if shortcut:
+                if shortcut is not None:
                     inputs = inputs + shortcut
                 shortcut = inputs
 
