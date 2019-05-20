@@ -138,6 +138,8 @@ def main():
             drop_last=True
         )
 
+        global_step = len(data_loader) * (last_epoch + 1)
+
         for epoch in range(last_epoch + 1, config.num_epochs):
 
             generator.train()
@@ -163,17 +165,6 @@ def main():
                 fake_images = generator(torch.cat((labels, latents, positions), dim=1))
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
-                fake_logits = discriminator(fake_images, real_labels)
-                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
-
-                generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
-                generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
-
-                generator_optimizer.zero_grad()
-                with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
-                    scaled_generator_loss.backward()
-                generator_optimizer.step()
-
                 real_logits = discriminator(real_images, real_labels)
                 real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
@@ -188,9 +179,20 @@ def main():
                     scaled_discriminator_loss.backward()
                 discriminator_optimizer.step()
 
-                if step % 100 == 0 and config.global_rank == 0:
+                fake_logits = discriminator(fake_images, real_labels)
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
-                    global_step = len(data_loader) * epoch + step
+                generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
+                generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
+
+                generator_optimizer.zero_grad()
+                with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
+                    scaled_generator_loss.backward()
+                generator_optimizer.step()
+
+                global_step += 1
+
+                if step % 100 == 0 and config.global_rank == 0:
 
                     summary_writer.add_images(
                         tag='real_images',
