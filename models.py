@@ -9,17 +9,13 @@ class Generator(nn.Module):
         super().__init__()
 
         self.module_dict = nn.ModuleDict(dict(
-            first_linear_block=nn.Sequential(
-                nn.Linear(**linear_params[0]),
-                nn.ReLU()
-            ),
             linear_blocks=nn.ModuleList([
                 nn.Sequential(
                     nn.Linear(**linear_param),
                     nn.ReLU()
-                ) for i, linear_param in enumerate(linear_params[1:-1])
+                ) for linear_param in linear_params[:-1]
             ]),
-            last_linear_block=nn.Sequential(
+            linear_block=nn.Sequential(
                 nn.Linear(**linear_params[-1]),
                 nn.Tanh()
             )
@@ -27,16 +23,13 @@ class Generator(nn.Module):
 
     def forward(self, inputs):
 
-        inputs = self.module_dict.first_linear_block(inputs)
-
-        shortcut = inputs
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
+            inputs = linear_block(inputs)
             if i and i % 2 == 0:
                 inputs = inputs + shortcut
                 shortcut = inputs
-            inputs = linear_block(inputs)
 
-        inputs = self.module_dict.last_linear_block(inputs)
+        inputs = self.module_dict.linear_block(inputs)
 
         return inputs
 
