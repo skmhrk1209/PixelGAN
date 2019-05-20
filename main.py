@@ -240,7 +240,7 @@ def main():
             images = generator(torch.cat((labels, latents, positions), dim=1))
             images = images.reshape(-1, 1, config.image_size, config.image_size)
 
-        for i, image in enumerate(images.numpy()):
+        for i, image in enumerate(images.cpu().numpy()):
             io.imsave(f"samples/{i}.jpg", image)
 
     summary_writer.close()
