@@ -1,7 +1,7 @@
 {
     "num_workers": 0,
     "num_epochs": 100,
-    "local_batch_size": 1,
+    "local_batch_size": 128,
     "generator_lr": 0.01,
     "generator_beta1": 0.9,
     "generator_beta2": 0.999,
