@@ -209,16 +209,12 @@ def main():
                         main_tag='training',
                         tag_scalar_dict=dict(
                             generator_loss=generator_loss,
-                            generator_accuracy=generator_accuracy,
                             discriminator_loss=discriminator_loss,
-                            discriminator_accuracy=discriminator_accuracy,
                             global_step=global_step
                         )
                     )
 
-                    print(f'[training] epoch: {epoch} step: {step} '
-                          f'generator_loss: {generator_loss:.4f} generator_accuracy: {generator_accuracy:.4f} '
-                          f'discriminator_loss: {discriminator_loss:.4f} discriminator_accuracy: {discriminator_accuracy:.4f}')
+                    print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss:.4f} discriminator_loss: {discriminator_loss:.4f}')
 
             torch.save(dict(
                 generator_state_dict=generator.state_dict(),
