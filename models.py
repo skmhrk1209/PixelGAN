@@ -23,10 +23,12 @@ class Generator(nn.Module):
 
     def forward(self, inputs):
 
+        shortcut = None
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
             inputs = linear_block(inputs)
-            if i and i % 2 == 0:
-                inputs = inputs + shortcut
+            if i % 2 == 0:
+                if shortcut:
+                    inputs = inputs + shortcut
                 shortcut = inputs
 
         inputs = self.module_dict.linear_block(inputs)
