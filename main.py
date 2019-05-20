@@ -69,9 +69,9 @@ def main():
 
     generator = models.Generator(
         linear_params=[
-            Dict(in_features=44, out_features=8),
-            *[Dict(in_features=8, out_features=8)] * 64,
-            Dict(in_features=8, out_features=1)
+            Dict(in_features=44, out_features=128),
+            *[Dict(in_features=128, out_features=128)] * 4,
+            Dict(in_features=128, out_features=1)
         ]
     ).cuda()
     discriminator = models.Discriminator(
@@ -123,7 +123,7 @@ def main():
             download=True,
             transform=transforms.Compose([
                 transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,))
+                # transforms.Normalize((0.5,), (0.5,))
             ])
         )
 
@@ -218,12 +218,12 @@ def main():
 
                     summary_writer.add_images(
                         tag='real_images',
-                        img_tensor=unnormalize(real_images.repeat(1, 3, 1, 1)),
+                        img_tensor=real_images.repeat(1, 3, 1, 1),
                         global_step=global_step
                     )
                     summary_writer.add_images(
                         tag='fake_images',
-                        img_tensor=unnormalize(fake_images.repeat(1, 3, 1, 1)),
+                        img_tensor=fake_images.repeat(1, 3, 1, 1),
                         global_step=global_step
                     )
                     summary_writer.add_scalars(

@@ -17,7 +17,7 @@ class Generator(nn.Module):
             ]),
             linear_block=nn.Sequential(
                 nn.Linear(**linear_params[-1]),
-                nn.Tanh()
+                nn.Sigmoid()
             )
         ))
 
