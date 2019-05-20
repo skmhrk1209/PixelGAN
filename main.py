@@ -177,7 +177,7 @@ def main():
                 if config.real_gradient_penalty_weight:
                     real_gradients = torch.autograd.grad(
                         outputs=real_logits,
-                        inputs=real_images,
+                        inputs=real_images.requires_grad_(True),
                         grad_outputs=torch.ones_like(real_logits),
                         retain_graph=True,
                         create_graph=True
@@ -188,7 +188,7 @@ def main():
                 if config.fake_gradient_penalty_weight:
                     fake_gradients = torch.autograd.grad(
                         outputs=fake_logits,
-                        inputs=fake_images,
+                        inputs=fake_images.requires_grad_(True),
                         grad_outputs=torch.ones_like(fake_logits),
                         retain_graph=True,
                         create_graph=True
