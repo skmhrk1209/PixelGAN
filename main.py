@@ -99,7 +99,7 @@ def main():
 
     last_epoch = -1
     if config.checkpoint:
-        checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(local_rank))
+        checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(config.local_rank))
         generator.load_state_dict(checkpoint.generator_state_dict)
         generator_optimizer.load_state_dict(checkpoint.generator_optimizer_state_dict)
         discriminator.load_state_dict(checkpoint.discriminator_state_dict)
