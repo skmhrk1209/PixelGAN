@@ -21,7 +21,7 @@ parser.add_argument('--config', type=str, default='config.json')
 parser.add_argument('--image_size', type=int, default=28)
 parser.add_argument('--checkpoint', type=str, default='')
 parser.add_argument('--train', action='store_true')
-parser.add_argument('--generate', action='store_true')
+parser.add_argument('--validate', action='store_true')
 parser.add_argument('--local_rank', type=int)
 args = parser.parse_args()
 
@@ -70,7 +70,7 @@ def main():
     generator = models.Generator(
         linear_params=[
             Dict(in_features=44, out_features=32),
-            *[Dict(in_features=32, out_features=32)] * 128,
+            *[Dict(in_features=32, out_features=32)] * 64,
             Dict(in_features=32, out_features=1)
         ]
     ).cuda()
@@ -142,7 +142,6 @@ def main():
 
         for epoch in range(last_epoch + 1, config.num_epochs):
 
-            generator.train()
             discriminator.train()
 
             for step, (real_images, real_labels) in enumerate(data_loader):
@@ -224,6 +223,29 @@ def main():
                 discriminator_optimizer_state_dict=discriminator_optimizer.state_dict(),
                 last_epoch=epoch
             ), f'{config.checkpoint_directory}/epoch_{epoch}')
+
+            if config.validate:
+
+                with torch.no_grad():
+
+                    labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
+                    labels = nn.functional.embedding(labels, torch.eye(10, device='cuda'))
+                    labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
+
+                    latents = torch.randn(config.local_batch_size, 32, device='cuda')
+                    latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
+
+                    y = torch.linspace(-1, 1, config.image_size, device='cuda')
+                    x = torch.linspace(-1, 1, config.image_size, device='cuda')
+                    y, x = torch.meshgrid(y, x)
+                    positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
+                    positions = positions.repeat(config.local_batch_size, 1)
+
+                    images = generator(torch.cat((labels, latents, positions), dim=1))
+                    images = images.reshape(-1, config.image_size, config.image_size)
+
+                for i, image in enumerate(images.cpu().numpy()):
+                    io.imsave(f"samples/{i}.jpg", image)
 
     if config.generate:
 
