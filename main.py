@@ -235,11 +235,11 @@ def main():
         positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
         positions = positions.repeat(config.local_batch_size, 1)
 
-        images = generator(torch.cat((labels, latents, positions), dim=1))
-        images = images.reshape(-1, 1, config.image_size, config.image_size)
+        fake_images = generator(torch.cat((labels, latents, positions), dim=1))
+        fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
-        for i, image in enumerate(images):
-            io.imsave(f"{i}.jpg", image)
+        for i, fake_image in enumerate(fake_images):
+            io.imsave(f"samples/{i}.jpg", fake_image)
 
     summary_writer.close()
 
