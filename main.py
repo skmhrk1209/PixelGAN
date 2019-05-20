@@ -222,23 +222,25 @@ def main():
 
         generator.eval()
 
-        labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
-        labels = nn.functional.embedding(labels, torch.eye(10, device='cuda'))
-        labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
+        with torch.no_grad():
 
-        latents = torch.randn(config.local_batch_size, 32, device='cuda')
-        latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
+            labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
+            labels = nn.functional.embedding(labels, torch.eye(10, device='cuda'))
+            labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
 
-        y = torch.linspace(-1, 1, config.image_size, device='cuda')
-        x = torch.linspace(-1, 1, config.image_size, device='cuda')
-        y, x = torch.meshgrid(y, x)
-        positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
-        positions = positions.repeat(config.local_batch_size, 1)
+            latents = torch.randn(config.local_batch_size, 32, device='cuda')
+            latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
 
-        images = generator(torch.cat((labels, latents, positions), dim=1))
-        images = images.reshape(-1, 1, config.image_size, config.image_size)
+            y = torch.linspace(-1, 1, config.image_size, device='cuda')
+            x = torch.linspace(-1, 1, config.image_size, device='cuda')
+            y, x = torch.meshgrid(y, x)
+            positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
+            positions = positions.repeat(config.local_batch_size, 1)
 
-        for i, image in enumerate(images):
+            images = generator(torch.cat((labels, latents, positions), dim=1))
+            images = images.reshape(-1, 1, config.image_size, config.image_size)
+
+        for i, image in enumerate(images.numpy()):
             io.imsave(f"samples/{i}.jpg", image)
 
     summary_writer.close()
