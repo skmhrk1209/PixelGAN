@@ -165,10 +165,10 @@ def main():
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images, real_labels)
-                real_adversarial_logits, real_classification_logits = torch.split(real_logits, [1, 10])
+                real_adversarial_logits, real_classification_logits = torch.split(real_logits, [1, 10], dim=1)
 
                 fake_logits = discriminator(fake_images.detach(), real_labels)
-                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10])
+                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10], dim=1)
 
                 discriminator_loss = torch.mean(nn.functional.softplus(-real_adversarial_logits))
                 discriminator_loss += torch.mean(nn.functional.softplus(fake_adversarial_logits))
@@ -181,7 +181,7 @@ def main():
                 discriminator_optimizer.step()
 
                 fake_logits = discriminator(fake_images, real_labels)
-                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10])
+                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10], dim=1)
 
                 generator_loss = torch.mean(nn.functional.softplus(-fake_adversarial_logits))
                 generator_loss += nn.functional.cross_entropy(fake_classification_logits, real_labels)
