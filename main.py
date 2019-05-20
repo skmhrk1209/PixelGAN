@@ -223,7 +223,7 @@ def main():
         generator.eval()
 
         labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
-        labels = nn.functional.embedding(real_labels, torch.eye(10, device='cuda'))
+        labels = nn.functional.embedding(labels, torch.eye(10, device='cuda'))
         labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
 
         latents = torch.randn(config.local_batch_size, 32, device='cuda')
@@ -235,11 +235,11 @@ def main():
         positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
         positions = positions.repeat(config.local_batch_size, 1)
 
-        fake_images = generator(torch.cat((labels, latents, positions), dim=1))
-        fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
+        images = generator(torch.cat((labels, latents, positions), dim=1))
+        images = images.reshape(-1, 1, config.image_size, config.image_size)
 
-        for i, fake_image in enumerate(fake_images):
-            io.imsave(f"samples/{i}.jpg", fake_image)
+        for i, image in enumerate(images):
+            io.imsave(f"samples/{i}.jpg", image)
 
     summary_writer.close()
 
