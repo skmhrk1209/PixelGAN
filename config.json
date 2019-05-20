@@ -8,8 +8,6 @@
     "discriminator_lr": 0.001,
     "discriminator_beta1": 0.9,
     "discriminator_beta2": 0.999,
-    "real_gradient_penalty_weight": 5.0,
-    "fake_gradient_penalty_weight": 0.0,
     "opt_level": "O0",
     "checkpoint_directory": "/content/gdrive/My Drive/PixelGAN/checkpoints",
     "event_directory": "/content/gdrive/My Drive/PixelGAN/events",

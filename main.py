@@ -165,14 +165,15 @@ def main():
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images, real_labels)
+                real_adversarial_logits, real_classification_logits = torch.split(real_logits, [1, 10])
+
                 fake_logits = discriminator(fake_images.detach(), real_labels)
+                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10])
 
-                discriminator_loss = torch.mean(nn.functional.softplus(-real_logits[:, 0]))
-                discriminator_loss += torch.mean(nn.functional.softplus(fake_logits[:, 0]))
-                discriminator_loss += nn.functional.cross_entropy(real_logits[:, 1:], real_labels)
-                discriminator_loss += nn.functional.cross_entropy(fake_logits[:, 1:], real_labels)
-
-                discriminator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(real_logits)), 1).float())
+                discriminator_loss = torch.mean(nn.functional.softplus(-real_adversarial_logits))
+                discriminator_loss += torch.mean(nn.functional.softplus(fake_adversarial_logits))
+                discriminator_loss += nn.functional.cross_entropy(real_classification_logits, real_labels)
+                discriminator_loss += nn.functional.cross_entropy(fake_classification_logits, real_labels)
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
@@ -180,11 +181,10 @@ def main():
                 discriminator_optimizer.step()
 
                 fake_logits = discriminator(fake_images, real_labels)
+                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10])
 
-                generator_loss = torch.mean(nn.functional.softplus(-fake_logits[:, 0]))
-                generator_loss += nn.functional.cross_entropy(fake_logits[:, 1:], real_labels)
-
-                generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
+                generator_loss = torch.mean(nn.functional.softplus(-fake_adversarial_logits))
+                generator_loss += nn.functional.cross_entropy(fake_classification_logits, real_labels)
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
