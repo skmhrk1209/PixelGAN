@@ -11,17 +11,17 @@ class Generator(nn.Module):
         self.module_dict = nn.ModuleDict(dict(
             first_linear_block=nn.Sequential(
                 nn.Linear(**linear_params[0]),
-                nn.ReLU()
+                nn.Tanh()
             ),
             linear_blocks=nn.ModuleList([
                 nn.Sequential(
                     nn.Linear(**linear_param),
-                    nn.ReLU()
+                    nn.Tanh() if i % 4 == 0 else nn.ReLU()
                 ) for i, linear_param in enumerate(linear_params[1:-1])
             ]),
             last_linear_block=nn.Sequential(
                 nn.Linear(**linear_params[-1]),
-                nn.Tanh()
+                nn.Sigmoid()
             )
         ))
 
@@ -31,10 +31,10 @@ class Generator(nn.Module):
 
         shortcut = inputs
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
-            if i and i % 2 == 0:
+            inputs = linear_block(inputs)
+            if i and i % 4 == 0:
                 inputs = inputs + shortcut
                 shortcut = inputs
-            inputs = linear_block(inputs)
 
         inputs = self.module_dict.last_linear_block(inputs)
 
