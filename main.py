@@ -45,10 +45,6 @@ def apply(function, dictionary):
     return dictionary
 
 
-def unnormalize(inputs, mean=0.5, std=0.5):
-    return inputs * std + mean
-
-
 def main():
 
     distributed.init_process_group(backend='nccl')
@@ -69,9 +65,9 @@ def main():
 
     generator = models.Generator(
         linear_params=[
-            Dict(in_features=44, out_features=128),
-            *[Dict(in_features=128, out_features=128)] * 4,
-            Dict(in_features=128, out_features=1)
+            Dict(in_features=44, out_features=8),
+            *[Dict(in_features=8, out_features=8)] * 128,
+            Dict(in_features=8, out_features=1)
         ]
     ).cuda()
     discriminator = models.Discriminator(
@@ -122,8 +118,7 @@ def main():
             train=True,
             download=True,
             transform=transforms.Compose([
-                transforms.ToTensor(),
-                # transforms.Normalize((0.5,), (0.5,))
+                transforms.ToTensor()
             ])
         )
 
