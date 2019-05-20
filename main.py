@@ -79,7 +79,7 @@ def main():
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2, bias=False),
             Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2, bias=False)
         ],
-        linear_param=Dict(in_features=64, out_features=10)
+        linear_param=Dict(in_features=64, out_features=11)
     ).cuda()
 
     generator_optimizer = torch.optim.Adam(
@@ -164,37 +164,15 @@ def main():
                 fake_images = generator(torch.cat((labels, latents, positions), dim=1))
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
-                real_logits = discriminator(real_images.requires_grad_(True), real_labels)
-                real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
+                real_logits = discriminator(real_images, real_labels)
+                fake_logits = discriminator(fake_images.detach(), real_labels)
 
-                fake_logits = discriminator(fake_images.detach().requires_grad_(True), real_labels)
-                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
+                discriminator_loss = torch.mean(nn.functional.softplus(-real_logits[:, 0]))
+                discriminator_loss += torch.mean(nn.functional.softplus(fake_logits[:, 0]))
+                discriminator_loss += nn.functional.cross_entropy(real_logits[:, 1:], real_labels)
+                discriminator_loss += nn.functional.cross_entropy(fake_logits[:, 1:], real_labels)
 
-                discriminator_loss = torch.mean(nn.functional.softplus(-real_logits))
-                discriminator_loss += torch.mean(nn.functional.softplus(fake_logits))
                 discriminator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(real_logits)), 1).float())
-
-                if config.real_gradient_penalty_weight:
-                    real_gradients = torch.autograd.grad(
-                        outputs=real_logits,
-                        inputs=real_images,
-                        grad_outputs=torch.ones_like(real_logits),
-                        retain_graph=True,
-                        create_graph=True
-                    )[0]
-                    real_gradient_penalty = torch.mean(torch.sum(real_gradients ** 2, dim=(1, 2, 3)))
-                    discriminator_loss += real_gradient_penalty * config.real_gradient_penalty_weight
-
-                if config.fake_gradient_penalty_weight:
-                    fake_gradients = torch.autograd.grad(
-                        outputs=fake_logits,
-                        inputs=fake_images,
-                        grad_outputs=torch.ones_like(fake_logits),
-                        retain_graph=True,
-                        create_graph=True
-                    )[0]
-                    fake_gradient_penalty = torch.mean(torch.sum(fake_gradients ** 2, dim=(1, 2, 3)))
-                    discriminator_loss += fake_gradient_penalty * config.fake_gradient_penalty_weight
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
@@ -202,9 +180,10 @@ def main():
                 discriminator_optimizer.step()
 
                 fake_logits = discriminator(fake_images, real_labels)
-                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
-                generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
+                generator_loss = torch.mean(nn.functional.softplus(-fake_logits[:, 0]))
+                generator_loss += nn.functional.cross_entropy(fake_logits[:, 1:], real_labels)
+
                 generator_accuracy = torch.mean(torch.eq(torch.round(torch.sigmoid(fake_logits)), 1).float())
 
                 generator_optimizer.zero_grad()
