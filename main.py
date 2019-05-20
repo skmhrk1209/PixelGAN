@@ -45,6 +45,10 @@ def apply(function, dictionary):
     return dictionary
 
 
+def unnormalize(inputs, mean=0.5, std=0.5):
+    return inputs * std + mean
+
+
 def main():
 
     distributed.init_process_group(backend='nccl')
@@ -118,7 +122,8 @@ def main():
             train=True,
             download=True,
             transform=transforms.Compose([
-                transforms.ToTensor()
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
         )
 
@@ -189,12 +194,12 @@ def main():
 
                     summary_writer.add_images(
                         tag='real_images',
-                        img_tensor=real_images.repeat(1, 3, 1, 1),
+                        img_tensor=unnormalize(real_images.repeat(1, 3, 1, 1)),
                         global_step=global_step
                     )
                     summary_writer.add_images(
                         tag='fake_images',
-                        img_tensor=fake_images.repeat(1, 3, 1, 1),
+                        img_tensor=unnormalize(fake_images.repeat(1, 3, 1, 1)),
                         global_step=global_step
                     )
                     summary_writer.add_scalars(
