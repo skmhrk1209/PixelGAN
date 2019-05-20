@@ -10,6 +10,7 @@ from torchvision import transforms
 from tensorboardX import SummaryWriter
 from apex import amp
 from apex import parallel
+from skimage import io
 import argparse
 import json
 import os
@@ -106,12 +107,11 @@ def main():
         discriminator_optimizer.load_state_dict(checkpoint.discriminator_optimizer_state_dict)
         last_epoch = checkpoint.last_epoch
 
+    os.makedirs(config.checkpoint_directory, exist_ok=True)
+    os.makedirs(config.event_directory, exist_ok=True)
     summary_writer = SummaryWriter(config.event_directory)
 
     if config.train:
-
-        os.makedirs(config.checkpoint_directory, exist_ok=True)
-        os.makedirs(config.event_directory, exist_ok=True)
 
         dataset = datasets.MNIST(
             root='mnist',
@@ -217,6 +217,29 @@ def main():
                 discriminator_optimizer_state_dict=discriminator_optimizer.state_dict(),
                 last_epoch=epoch
             ), f'{config.checkpoint_directory}/epoch_{epoch}')
+
+    if config.generate:
+
+        generator.eval()
+
+        labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
+        labels = nn.functional.embedding(real_labels, torch.eye(10, device='cuda'))
+        labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
+
+        latents = torch.randn(config.local_batch_size, 32, device='cuda')
+        latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
+
+        y = torch.linspace(-1, 1, config.image_size, device='cuda')
+        x = torch.linspace(-1, 1, config.image_size, device='cuda')
+        y, x = torch.meshgrid(y, x)
+        positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
+        positions = positions.repeat(config.local_batch_size, 1)
+
+        images = generator(torch.cat((labels, latents, positions), dim=1))
+        images = images.reshape(-1, 1, config.image_size, config.image_size)
+
+        for i, image in enumerate(images):
+            io.imsave(f"{i}.jpg", image)
 
     summary_writer.close()
 
