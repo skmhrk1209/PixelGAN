@@ -66,9 +66,9 @@ def main():
 
     generator = models.Generator(
         linear_params=[
-            Dict(in_features=44, out_features=1024),
-            *[Dict(in_features=1024, out_features=1024)] * 8,
-            Dict(in_features=1024, out_features=1)
+            Dict(in_features=44, out_features=128),
+            *[Dict(in_features=128, out_features=128)] * 8,
+            Dict(in_features=128, out_features=1)
         ]
     ).cuda()
     discriminator = models.Discriminator(
