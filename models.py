@@ -26,12 +26,10 @@ class Generator(nn.Module):
         shortcut = None
         for i, linear_block in enumerate(self.module_dict.linear_blocks):
             inputs = linear_block(inputs)
-            '''
             if i % 1 == 0:
                 if shortcut:
                     inputs = inputs + shortcut
                 shortcut = inputs
-            '''
 
         inputs = self.module_dict.linear_block(inputs)
 
