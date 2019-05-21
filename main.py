@@ -244,7 +244,7 @@ def main():
             images = images.reshape(-1, config.image_size, config.image_size)
 
         for i, image in enumerate(images.cpu().numpy()):
-            io.imsave(f"samples/{i}.jpg", image)
+            io.imsave(f"{i}.jpg", image)
 
     summary_writer.close()
 
