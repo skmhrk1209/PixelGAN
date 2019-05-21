@@ -51,6 +51,7 @@ def main():
 
     with open(args.config) as file:
         config = Dict(json.load(file))
+
     config.update(vars(args))
     config.update(dict(
         world_size=distributed.get_world_size(),
@@ -98,18 +99,21 @@ def main():
     generator = parallel.DistributedDataParallel(generator, delay_allreduce=True)
     discriminator = parallel.DistributedDataParallel(discriminator, delay_allreduce=True)
 
-    last_epoch = -1
+    epoch = 0
+    global_step = 0
     if config.checkpoint:
         checkpoint = Dict(torch.load(config.checkpoint), map_location=lambda storage, location: storage.cuda(config.local_rank))
         generator.load_state_dict(checkpoint.generator_state_dict)
         generator_optimizer.load_state_dict(checkpoint.generator_optimizer_state_dict)
         discriminator.load_state_dict(checkpoint.discriminator_state_dict)
         discriminator_optimizer.load_state_dict(checkpoint.discriminator_optimizer_state_dict)
-        last_epoch = checkpoint.last_epoch
+        epoch = checkpoint.last_epoch + 1
+        global_step = checkpoint.last_global_step + 1
 
-    os.makedirs(config.checkpoint_directory, exist_ok=True)
-    os.makedirs(config.event_directory, exist_ok=True)
-    summary_writer = SummaryWriter(config.event_directory)
+    if config.global_rank == 0:
+        os.makedirs(config.checkpoint_directory, exist_ok=True)
+        os.makedirs(config.event_directory, exist_ok=True)
+        summary_writer = SummaryWriter(config.event_directory)
 
     if config.train:
 
@@ -122,22 +126,21 @@ def main():
             ])
         )
 
-        sampler = utils.data.distributed.DistributedSampler(dataset)
+        distributed_sampler = utils.data.distributed.DistributedSampler(dataset)
 
         data_loader = utils.data.DataLoader(
             dataset=dataset,
             batch_size=config.local_batch_size,
             num_workers=config.num_workers,
-            sampler=sampler,
+            sampler=distributed_sampler,
             pin_memory=True,
             drop_last=True
         )
 
-        global_step = len(data_loader) * (last_epoch + 1)
-
-        for epoch in range(last_epoch + 1, config.num_epochs):
+        for epoch in range(epoch, config.num_epochs):
 
             discriminator.train()
+            distributed_sampler.set_epoch(epoch)
 
             for step, (real_images, real_labels) in enumerate(data_loader):
 
@@ -216,7 +219,8 @@ def main():
                 generator_optimizer_state_dict=generator_optimizer.state_dict(),
                 discriminator_state_dict=discriminator.state_dict(),
                 discriminator_optimizer_state_dict=discriminator_optimizer.state_dict(),
-                last_epoch=epoch
+                last_epoch=epoch,
+                last_global_step=global_step
             ), f'{config.checkpoint_directory}/epoch_{epoch}')
 
     if config.generate:
