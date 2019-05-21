@@ -65,9 +65,9 @@ def main():
 
     generator = models.Generator(
         linear_params=[
-            Dict(in_features=44, out_features=8),
-            *[Dict(in_features=8, out_features=8)] * 128,
-            Dict(in_features=8, out_features=1)
+            Dict(in_features=44, out_features=128),
+            *[Dict(in_features=128, out_features=128)] * 4,
+            Dict(in_features=128, out_features=1)
         ]
     ).cuda()
     discriminator = models.Discriminator(
@@ -223,20 +223,18 @@ def main():
 
         with torch.no_grad():
 
-            config.local_batch_size = 1
-
-            labels = torch.multinomial(torch.ones(config.local_batch_size, 10, device='cuda'), num_samples=1).squeeze(1)
+            labels = torch.multinomial(torch.ones(10, device='cuda'), num_samples=1)
             labels = nn.functional.embedding(labels, torch.eye(10, device='cuda'))
             labels = labels.repeat(1, config.image_size ** 2).reshape(-1, 10)
 
-            latents = torch.randn(config.local_batch_size, 32, device='cuda')
+            latents = torch.randn(1, 32, device='cuda')
             latents = latents.repeat(1, config.image_size ** 2).reshape(-1, 32)
 
             y = torch.linspace(-1, 1, config.image_size, device='cuda')
             x = torch.linspace(-1, 1, config.image_size, device='cuda')
             y, x = torch.meshgrid(y, x)
             positions = torch.stack((y.reshape(-1), x.reshape(-1)), dim=1)
-            positions = positions.repeat(config.local_batch_size, 1)
+            positions = positions.repeat(1, 1)
 
             images = generator(torch.cat((labels, latents, positions), dim=1))
             images = images.reshape(-1, config.image_size, config.image_size)
