@@ -75,7 +75,7 @@ def main():
             Dict(in_channels=1, out_channels=32, kernel_size=3, stride=2, bias=False),
             Dict(in_channels=32, out_channels=64, kernel_size=3, stride=2, bias=False)
         ],
-        linear_param=Dict(in_features=64, out_features=11)
+        linear_param=Dict(in_features=64, out_features=10)
     ).cuda()
 
     generator_optimizer = torch.optim.Adam(
@@ -160,15 +160,13 @@ def main():
                 fake_images = fake_images.reshape(-1, 1, config.image_size, config.image_size)
 
                 real_logits = discriminator(real_images, real_labels)
-                real_adversarial_logits, real_classification_logits = torch.split(real_logits, [1, 10], dim=1)
+                real_logits = torch.gather(real_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 fake_logits = discriminator(fake_images.detach(), real_labels)
-                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10], dim=1)
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 discriminator_loss = torch.mean(nn.functional.softplus(-real_adversarial_logits))
                 discriminator_loss += torch.mean(nn.functional.softplus(fake_adversarial_logits))
-                discriminator_loss += nn.functional.cross_entropy(real_classification_logits, real_labels)
-                discriminator_loss += nn.functional.cross_entropy(fake_classification_logits, real_labels)
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
@@ -176,10 +174,9 @@ def main():
                 discriminator_optimizer.step()
 
                 fake_logits = discriminator(fake_images, real_labels)
-                fake_adversarial_logits, fake_classification_logits = torch.split(fake_logits, [1, 10], dim=1)
+                fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
                 generator_loss = torch.mean(nn.functional.softplus(-fake_adversarial_logits))
-                generator_loss += nn.functional.cross_entropy(fake_classification_logits, real_labels)
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
@@ -204,9 +201,9 @@ def main():
                         main_tag='training',
                         tag_scalar_dict=dict(
                             generator_loss=generator_loss,
-                            discriminator_loss=discriminator_loss,
-                            global_step=global_step
-                        )
+                            discriminator_loss=discriminator_loss
+                        ),
+                        global_step=global_step
                     )
 
                     print(f'[training] epoch: {epoch} step: {step} generator_loss: {generator_loss:.4f} discriminator_loss: {discriminator_loss:.4f}')
