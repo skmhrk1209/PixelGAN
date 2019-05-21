@@ -165,8 +165,8 @@ def main():
                 fake_logits = discriminator(fake_images.detach(), real_labels)
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
-                discriminator_loss = torch.mean(nn.functional.softplus(-real_adversarial_logits))
-                discriminator_loss += torch.mean(nn.functional.softplus(fake_adversarial_logits))
+                discriminator_loss = torch.mean(nn.functional.softplus(-real_logits))
+                discriminator_loss += torch.mean(nn.functional.softplus(fake_logits))
 
                 discriminator_optimizer.zero_grad()
                 with amp.scale_loss(discriminator_loss, discriminator_optimizer) as scaled_discriminator_loss:
@@ -176,7 +176,7 @@ def main():
                 fake_logits = discriminator(fake_images, real_labels)
                 fake_logits = torch.gather(fake_logits, dim=1, index=real_labels.unsqueeze(-1)).squeeze(-1)
 
-                generator_loss = torch.mean(nn.functional.softplus(-fake_adversarial_logits))
+                generator_loss = torch.mean(nn.functional.softplus(-fake_logits))
 
                 generator_optimizer.zero_grad()
                 with amp.scale_loss(generator_loss, generator_optimizer) as scaled_generator_loss:
